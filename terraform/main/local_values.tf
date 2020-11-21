@@ -44,5 +44,10 @@ locals {
 
   # fargate
   namespace_name = "default"
-  labels         = { "fargate" = "yes" }
+  labels         = { "fargate" = "true" }
+
+  # IAM for SA
+  k8s_namespace     = "default"
+  k8s_sa            = "iam-test"
+  attach_policy_arn = "arn:aws:iam::aws:policy/CloudWatchLogsFullAccess"
 }

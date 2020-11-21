@@ -7,6 +7,13 @@ resource "aws_cloudwatch_event_rule" "start_bastion_rule" {
   name                = "${var.base_name}-Bastion-StartRule"
   description         = "Start ${var.base_name} Bastion"
   schedule_expression = var.cloudwatch_start_schedule
+
+  tags = merge(
+    {
+      "Name" = "${var.base_name}-Bastion-StartRule"
+    },
+    var.tags
+  )
 }
 
 resource "aws_cloudwatch_event_target" "start_bastion" {
@@ -32,6 +39,13 @@ resource "aws_cloudwatch_event_rule" "stop_bastion_rule" {
   name                = "${var.base_name}-Bastion-StopRule"
   description         = "Stop ${var.base_name} Bastion"
   schedule_expression = var.cloudwatch_stop_schedule
+
+  tags = merge(
+    {
+      "Name" = "${var.base_name}-Bastion-StopRule"
+    },
+    var.tags
+  )
 }
 
 resource "aws_cloudwatch_event_target" "stop_bastion" {

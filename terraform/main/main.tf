@@ -125,6 +125,7 @@ module "worker-node" {
 }
 
 # Fargateプロファイルを作成するモジュールです。
+# 複数のFargateプロファイルを使う場合、以下モジュールブロックをコピペしてモジュール名や変数名を変えてください。
 # Fargateを使用しない場合はこのモジュール部分をコメントアウトしてください。
 # Fargateを起動できるNamespace、labelを指定できます。
 module "fargate" {
@@ -140,4 +141,23 @@ module "fargate" {
   private_subnet_ids = module.network.private_subnet_ids
   namespace_name     = local.namespace_name
   labels             = local.labels
+}
+
+# K8sのServiceAccountにIAMロールを紐付けるモジュールです。
+# 複数のServiceAccountに対して紐付けを行う場合、以下モジュールブロックをコピペしてモジュール名や変数名を変えてください。
+# とくに紐付けを行わない場合はこのモジュール部分をコメントアウトしてください。
+# IAMロールに付けるIAMポリシーはあらかじめ作成しておいてください。
+module "iam-for-sa" {
+  source = "../modules/eks-iam-for-sa"
+
+  # common parameter
+  tags      = local.tags
+  base_name = local.base_name
+
+  # module parameter
+  openid_connect_provider_url = module.eks.openid_connect_provider_url
+  openid_connect_provider_arn = module.eks.openid_connect_provider_arn
+  k8s_namespace               = local.k8s_namespace
+  k8s_sa                      = local.k8s_sa
+  attach_policy_arn           = local.attach_policy_arn
 }

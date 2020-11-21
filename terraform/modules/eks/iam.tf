@@ -16,6 +16,13 @@ resource "aws_iam_role" "eks_cluster" {
   ]
 }
 POLICY
+
+  tags = merge(
+    {
+      "Name" = "${var.base_name}-eks-cluster-role"
+    },
+    var.tags
+  )
 }
 
 resource "aws_iam_role_policy_attachment" "eks_cluster" {
@@ -30,7 +37,7 @@ resource "aws_iam_role_policy_attachment" "eks_vpc_resource_controller" {
 
 # managed node group
 resource "aws_iam_role" "eks_node_group" {
-  name = "${var.base_name}eks-node-group"
+  name = "${var.base_name}-eks-node-group"
 
   assume_role_policy = jsonencode({
     Statement = [{
@@ -42,6 +49,13 @@ resource "aws_iam_role" "eks_node_group" {
     }]
     Version = "2012-10-17"
   })
+
+  tags = merge(
+    {
+      "Name" = "${var.base_name}-eks-node-group"
+    },
+    var.tags
+  )
 }
 
 resource "aws_iam_role_policy_attachment" "eks_worker_node_policy" {
@@ -73,6 +87,13 @@ resource "aws_iam_role" "fargate_profile" {
     }]
     Version = "2012-10-17"
   })
+
+  tags = merge(
+    {
+      "Name" = "${var.base_name}-fargate-profile"
+    },
+    var.tags
+  )
 }
 
 resource "aws_iam_role_policy_attachment" "eks_fargate_pod_execution_role" {

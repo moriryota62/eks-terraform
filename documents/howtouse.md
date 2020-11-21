@@ -145,22 +145,22 @@ eksctl delete cluster -f sample-cluster.yaml
 
 - [ ] network
   - [ ] api serverへは指定したCIDRからのみアクセスできる
-  - [ ] パブリックサブネットとプライベートサブネットを関連付ける
+  - [X] パブリックサブネットとプライベートサブネットを関連付ける
 - log
-  - [ ] すべてのマスターコンポーネントのログを取得する
+  - [X] すべてのマスターコンポーネントのログを取得する
 - worker
-  - [ ] workerはすべてプライベートサブネットに配置する
-  - [ ] managed workerを使用する
-  - [ ] Cluster Autoscallerにも対応する （eksctlだと自動で付与される）
-  - [ ] workerは`infra`、`app`の2つのグループを構成
-  - [ ] 各グループに`role: infra`、`role: app`のラベルをつける
+  - [X] workerはすべてプライベートサブネットに配置する
+  - [X] managed workerを使用する
+  - [X] Cluster Autoscallerにも対応する （managed workerだと自動で付与される）
+  - [X] workerは`infra`、`app`の2つのグループを構成
+  - [X] 各グループに`role: infra`、`role: app`のラベルをつける
   - [ ] また、fargateのワーカーも用意する
     - [ ] fargateはdefaultのnamespaceに紐づく
     - [ ] fargateには`faragete: true`のラベルがついているPodだけ起動する 
   - [ ] ec2のワーカーには任意のsshキーでアクセスできる
 - security
   - [ ] Pod to Iamを使用する
-  - [ ] secretのkms暗号化を使用する
+  - [X] secretのkms暗号化を使用する
   - [ ] Pod SGも使用できる
 
 - [ ] fargateでPodが起動できる

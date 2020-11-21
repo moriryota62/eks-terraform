@@ -9,3 +9,11 @@ output "nodegroup_iam_arn" {
 output "fargate_iam_arn" {
   value = aws_iam_role.fargate_profile.arn
 }
+
+output "openid_connect_provider_url" {
+  value = aws_iam_openid_connect_provider.this.url
+}
+
+output "openid_connect_provider_arn" {
+  value = aws_iam_openid_connect_provider.this.arn
+}

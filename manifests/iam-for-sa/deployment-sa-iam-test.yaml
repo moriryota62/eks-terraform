@@ -1,0 +1,21 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: sa-iam-test
+  name: sa-iam-test
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: sa-iam-test
+  template:
+    metadata:
+      labels:
+        app: sa-iam-test
+    spec:
+      serviceAccountName: iam-test
+      containers:
+      - image: amazon/aws-cli
+        name: aws-cli
+        command: ["/bin/sh","-c","sleep 3600"]

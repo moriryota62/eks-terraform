@@ -86,8 +86,15 @@ data "aws_iam_policy_document" "bastion_ssm_automation_trust" {
 resource "aws_iam_role" "bastion_ssm_automation" {
   count = var.cloudwatch_enable_schedule ? 1 : 0
 
-  name               = "${var.base_name}-GitLab-Runner-SSMautomation"
+  name               = "${var.base_name}-Bastioin-SSMautomation"
   assume_role_policy = data.aws_iam_policy_document.bastion_ssm_automation_trust.json
+
+  tags = merge(
+    {
+      "Name" = "${var.base_name}-Bastioin-SSMautomation"
+    },
+    var.tags
+  )
 }
 
 # SSM Automation用のIAM RoleにPolicy付与
@@ -115,4 +122,11 @@ resource "aws_iam_role" "event_invoke_assume_role" {
 
   name               = "${var.base_name}-Bastion-CloudWatchEventRole"
   assume_role_policy = data.aws_iam_policy_document.runner_event_invoke_assume_role.json
+
+  tags = merge(
+    {
+      "Name" = "${var.base_name}-Bastion-CloudWatchEventRole"
+    },
+    var.tags
+  )
 }

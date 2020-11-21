@@ -1,0 +1,20 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: sa-default
+  name: sa-default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: sa-default
+  template:
+    metadata:
+      labels:
+        app: sa-default
+    spec:
+      containers:
+      - image: amazon/aws-cli
+        name: aws-cli
+        command: ["/bin/sh","-c","sleep 3600"]
