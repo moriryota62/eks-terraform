@@ -1,0 +1,21 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: fargate
+  name: fargate
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: fargate
+  template:
+    metadata:
+      labels:
+        app: fargate
+        worker: fargate
+    spec:
+      containers:
+      - image: nginx
+        name: nginx

@@ -1,3 +1,12 @@
+terraform {
+  required_version = ">= 0.13.5"
+}
+
+provider "aws" {
+  version = ">= 3.5.0"
+  region  = "us-east-2"
+}
+
 # parameter settings
 locals {
   # common parameter
@@ -44,7 +53,7 @@ locals {
 
   # fargate
   namespace_name = "default"
-  labels         = { "fargate" = "true" }
+  labels         = { "worker" = "fargate" }
 
   # IAM for SA
   k8s_namespace     = "default"

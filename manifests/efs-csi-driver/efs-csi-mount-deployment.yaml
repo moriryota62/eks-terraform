@@ -1,0 +1,26 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: efs-mount
+  name: efs-mount
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: efs-mount
+  template:
+    metadata:
+      labels:
+        app: efs-mount
+    spec:
+      containers:
+      - image: nginx
+        name: nginx
+        volumeMounts:
+        - name: persistent-storage
+          mountPath: /data
+      volumes:
+      - name: persistent-storage
+        persistentVolumeClaim:
+          claimName: efs-claim
