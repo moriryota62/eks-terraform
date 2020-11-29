@@ -45,7 +45,7 @@ cd $DIR/manifests/fargate
 ```
 
 このディレクトリに`fargate-deployment.yaml`があります。
-これはFargateでPodを起動するDeploymentのサンプルです。
+これはFargateでPodを起動するDeploymentのサンプルです。
 Fargateプロファイルにあわせ、Namespaceは`default`を指定しています。（指定なしでもdefaultで起動しますが、今回はあえてわかりやすい様にNamespaceを指定しています。）
 ラベルは`worker: fargate`を指定しています。
 
@@ -56,7 +56,9 @@ Fargateプロファイルにあわせ、Namespaceは`default`を指定してい�
 kubectl apply -f ./fargate-deployment.yaml
 ```
 
-Podが起動したことを確認します。なお、`-o wide`オプションをつけ、起動先のノードがFargateであることをも確認します。なお、FaragateでPodを起動するのはEC2ワーカーノードで起動するよりも少し時間がかかり、2分ほどかかります。`Pending`->`ContainerCreating`->`Running`と状態が推移しいき、`Running`になれば起動完了です。
+Podが起動したことを確認します。`-o wide`オプションをつけ起動先のノードがFargateであることをも確認します。
+なお、FaragateでPodを起動するのはEC2ワーカーノードで起動するよりも少し時間がかかり、2分ほどかかります。
+`Pending`->`ContainerCreating`->`Running`と状態が推移しいき、`Running`になれば起動完了です。
 
 ``` sh
 kubectl get pod -o wide
@@ -71,9 +73,64 @@ fargate-5d9865d5c-j4gcb   1/1     Running   0          3m36s   10.1.20.160   far
 
 # EFSのマウント
 
+EKSでEFSを使用する方法はいくつかあります。
+代表的な方法として`EFS Provisoner`を使用する方法と`EFS CSI Driver`を使用する方法を紹介します。
+
+`EFS CSI Driver`は新たに開発されたものでいずれはこちらの方法がスタンダードになると思われます。
+しかし、2020/11時点ではまだ開発中であり、Dynamic Volume Provisoning（以下、DVP）に対応していません。
+そのため、用途ごとに領域を確保したい場合、手動でアクセスポイントを作成し、PersistentVolumeをapplyする手間が必要です。
+一方、Fargateで起動しているPodに対してもボリューム提供できる点は`EFS Provisoner`にはない利点です。
+
+`EFS Provisoner`は上記`EFS CSI Driver`のような手間はいりません。
+ですが、Fargateで起動しているPodにはボリューム提供ができません。
+一方、DVPが可能な点は`EFS CSI Driver`にはない利点です。
+
+つまり、以下2点をポイントにどちらかの方法を選択します。
+
+- DVP無しが許容できるか（運用の手間）
+- Fargateでボリューム共有が必要なPodを動かすか
+
 ## EFS Provisonerを使用する場合
 
 ## EFS CSI Driverを使用する場合
+
+現在、EFS CSI Driverが開発されています。
+これを使えば今まではProvisoner Pod経由でEFSを使用していましたが、各Podが直接EFSをマウントできるようになります。
+まだ開発段階のため、DVPには対応していませんが、将来的にはEFS ProvisonerではなくEFS CSI Driverが主流になると思われます。
+
+EFS CSI Driver関連のマニフェストを配置したディレクトリに移動します。
+
+``` sh
+cd $DIR/manifests/efs-csi-driver
+```
+
+EFS CSI Driverは以下コマンドでデプロイします。2020/11現在は手動でデプロイする必要がありますが、将来的にはEKSに標準で組み込まれる予定です。
+
+``` sh
+kubectl apply -k "github.com/kubernetes-sigs/aws-efs-csi-driver/deploy/kubernetes/overlays/stable/ecr/?ref=release-1.0"
+```
+
+EFS CSI Driverを指定した`StorageClass`をデプロイします。
+`efs-csi-sc.yaml`をそのままapplyすれば良いです。
+デプロイすると`PROVISIONERがefs.csi.aws.com`のStorageClassが追加されます。
+
+``` sh
+kubectl apply -f efs-csi-sc.yaml
+kubectl get storageclass
+```
+
+次に実際にEFS CSI Driverを使用してEFSをマウントする`Deployment`、`PersistentVolumeClaim`、`PersistentVolume`をデプロイします。
+EFS CSI DriverはまだDVPに対応していないため、あらかじめPersistentVolumeを手動で作成する必要があります。
+また、PersistentVolumeのマニフェストはEFSのファイルシステムIDを指定するため、自身の環境にあわせて修正してください。
+
+`efs-csi-pv.yaml`を自身の環境にあわせて修正したら以下コマンドでデプロイします。
+
+``` sh
+kubectl apply -f efs-csi-mount-deployment.yaml -f efs-csi-pvc.yaml -f efs-csi-pv.yaml
+kubectl get pod
+```
+
+
 
 # Ingress公開
 

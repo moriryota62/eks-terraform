@@ -1,4 +1,5 @@
-- [使い方](#使い方)
+- [前提](#前提)
+- [環境変数の設定](#環境変数の設定)
 
 本レポジトリのTerraformコードを利用する方法を説明します。
 
@@ -78,7 +79,7 @@ ll
 -rw-r--r--  1 moriryota62  staff  2049 11 21 11:23 terraform.tfstate.backup
 ```
 
-# EKSの作成
+# パラメータ設定
 
 EKSおよび周辺リソースを構築します。まずはmainとなるディレクトリに移動します。
 
@@ -98,13 +99,88 @@ sed -i "" -e 's:OWNER:'$OWNER':g' local_values.tf
 ```
 
 その後、`local_values.tf`および`maint.tf`を修正します。
-
 `local_values.tf`には作成するリソースの内、値を決める必要のあるパラメータをまとめています。
-自身の環境にあわせてパラメータを指定してください。
+`maint.tf`はAWSリソースを作成するモジュールを読み込みます。不要なモジュールがあればブロックごとコメントアウトしてください。
 
-`main.tf`には作成するリソースの読み出しや`local_values.tf`で宣言した値の代入などを行います。
-ノードグループやFargateプロファイル、iam-for-saなどを複数作りたい場合はモジュール部分をまるごとコピペし、モジュール名やlocalの変数名を変えて`local_value.tf`に自身で追加して設定してください。
-また、不要なモジュール部分はまるごとコメントアウトすればそれらのリソースは作成されません。
+以下、モジュールごとに修正のポイントを解説します。
+
+## network
+
+EKSをデプロイするVPCやサブネットを作成します。
+
+既存のネットワークを使用する場合、`main.tf`の`module "network"`をブロックごとコメントアウトしてください。
+また、その場合は`maint.tf`内にある`module.network〜`でパラメータを読み込んでいる箇所を自身の環境に合わせた値へ修正してください。
+たとえば、VPC-IDが`vpc-01b9832`だった場合、`main.tf`内の`module.network.vpc_id`を`vpc-01b9832`にすべて置換します。
+
+新規にネットワークを作成する場合、`local_value.tf`内のnetwork module関連パラメータを指定してください。
+なお、EKSの仕様上ことなる2つ以上のAZが必要となります。そのため、各サブネットは必ず2つ以上指定してください。
+
+## bastion
+
+踏み台サーバを作成します。
+
+`local_value.tf`内のbastion module関連パラメータを指定してください。
+なお、sshキーを指定する場合、terraform実行前にデプロイするリージョンでkeyペアを作成しておいてください。モジュール内でkeyペアは作成しません。
+インスタンスの自動起動/停止が不要な場合は`cloudwatch_enable_schedule`をfalseにします。terraform実行後のoutputに踏み台サーバのIPアドレスが表示されます。
+
+複数の踏み台サーバを作成したい場合、`maint.tf`内の`module "bastion"`をブロックごとコピペし、モジュール名や`local.〜`のパラメータ名を変更し、`local_value.tf`で値を設定してください。
+
+## kms
+
+EFSやEKSのSecretリソースを暗号化するキーを発行します。
+
+KMSについてのパラメータはとくに指定しません。
+
+## efs
+
+複数Podでデータを共有するためのEFSを作成します。
+
+EKSでのEFSの扱いかたによって`local_value.tf`内のefs module関連パラメータの指定が変わります。
+
+### EFS provisoner を使用する場合
+
+`local_value.tf`内の`efs_access_points`はとくに設定不要です。コメントアウトするか、`efs_access_points = {}`と設定します。terraform実行後のoutputに`efs_id`が表示されます。これらはEKSのK8sマニフェストで使用するため値を控えておきます。
+
+### EFS CSI Driver を使用する場合
+
+`local_value.tf`内の`efs_access_points`を設定します。EFSの用途ごとにEFSアクセスポイントを作成します。用途の数だけ`efs_access_points`にmapを設定してください。terraform実行後のoutputに`efs_id`と`access_points`が表示されます。これらはEKSのK8sマニフェストで使用するため値を控えておきます。
+
+## eks
+
+EKSを作成します。
+
+`local_value.tf`内のeks module関連パラメータを指定してください。
+
+## node-group
+
+EKSのマネージドノードグループを作成します。
+
+`local_value.tf`内のnode-group module関連パラメータを指定してください。
+なお、sshキーを指定する場合、terraform実行前にデプロイするリージョンでkeyペアを作成しておいてください。モジュール内でkeyペアは作成しません。
+
+複数のノードグループを作成したい場合、`maint.tf`内の`module "worker-node"`をブロックごとコピペし、モジュール名や`local.〜`のパラメータ名を変更し、`local_value.tf`で値を設定してください。
+
+## fargate
+
+EKSのFargateプロファイルを作成します。
+
+Fargateを使用しない場合、`main.tf`の`module "fargate"`をブロックごとコメントアウトしてください。
+
+Fargateを使用する場合、`local_value.tf`内のfargate module関連パラメータを指定してください。
+
+複数のFargateプロファイルを作成したい場合、`maint.tf`内の`module "fargate"`をブロックごとコピペし、モジュール名や`local.〜`のパラメータ名を変更し、`local_value.tf`で値を設定してください。
+
+## iam-for-sa
+
+AWSのIAMロールとK8sのServiceAccountを連携する設定を行います。
+
+iam for saを設定しない場合、`main.tf`の`module "iam-for-sa"`をブロックごとコメントアウトしてください。
+
+iam for saを設定する場合、`local_value.tf`内のiam for sa module関連パラメータを指定してください。
+
+複数のIAMロールおよびServiceAccountを連携する場合、`maint.tf`内の`module "iam-for-sa"`をブロックごとコピペし、モジュール名や`local.〜`のパラメータ名を変更し、`local_value.tf`で値を設定してください。
+
+# Terraform実行
 
 `local_values.tf`および`maint.tf`を修正したらTerraformを実行します。
 
@@ -115,7 +191,19 @@ terraform apply
 > yes
 ```
 
-なお、EKSの作成には10分以上かかるためapplyをyesしてから完了するまで20分ほどかかります。
+なお、EKSの作成には10分以上かかるためapplyをyesしてからすべてのリソース作成が完了するまで20分ほどかかります。
+完了すると以下のように出力されます。
+
+```
+Apply complete! Resources: 61 added, 0 changed, 0 destroyed.
+Releasing state lock. This may take a few moments...
+
+Outputs:
+
+access_points = []
+bastion_eip = 18.195.116.73
+efs_id = fs-9fc0aft7
+```
 
 # KUBECONFIGの設定
 
@@ -125,6 +213,7 @@ EKSに接続するためkubeconfigを設定します。
 
 ``` sh
 aws eks --region $REGION update-kubeconfig --name $PJ-$ENV --kubeconfig ~/.kube/config_$PJ-$ENV
+aws eks --region us-east-2 update-kubeconfig --name PJ-ENV --kubeconfig ~/.kube/config_PJ-ENV
 ```
 
 その後、使用するkubeconfigを以下の環境変数で設定します。
@@ -142,43 +231,4 @@ kubectl get node
 ノードが表示されれば接続できています。
 
 以降はEKS(K8s)の設定をします。
-基本的な機能を実践するサンプルマニフェストを用意していますのでそちらもご活用ください。
-
-
----
-
-``` sh
-aws eks --region $REGION update-kubeconfig --name $PJ-$ENV --kubeconfig ~/.kube/config_CLUSTERNAME
-aws eks --region $REGION update-kubeconfig --name PJ-NAME-ENV --kubeconfig ~/.kube/config_PJ-NAME-ENV
-aws eks --region us-east-2 update-kubeconfig --name PJ-ENV --kubeconfig ~/.kube/config_PJ-ENV
-```
-
-
-
-
-- [ ] network
-  - [ ] api serverへは指定したCIDRからのみアクセスできる
-  - [X] パブリックサブネットとプライベートサブネットを関連付ける
-- log
-  - [X] すべてのマスターコンポーネントのログを取得する
-- worker
-  - [X] workerはすべてプライベートサブネットに配置する
-  - [X] managed workerを使用する
-  - [X] Cluster Autoscallerにも対応する （managed workerだと自動で付与される）
-  - [X] workerは`infra`、`app`の2つのグループを構成
-  - [X] 各グループに`role: infra`、`role: app`のラベルをつける
-  - [X] また、fargateのワーカーも用意する
-    - [X] fargateはdefaultのnamespaceに紐づく
-    - [X] fargateには`faragete: true`のラベルがついているPodだけ起動する 
-  - [ ] ec2のワーカーには任意のsshキーでアクセスできる
-- security
-  - [ ] Pod to Iamを使用する
-  - [X] secretのkms暗号化を使用する
-  - [ ] Pod SGも使用できる
-
-- [ ] fargateでPodが起動できる
-- [ ] EBSのDVPできる
-- [_] EFSのDVPできる
-- [_] CAできる
-- [_] type:ALBのServiceつくれる
-- [_] Fluxできる
+基本的な機能の[実装方法](./manifests.md)を用意していますのでそちらもご活用ください。

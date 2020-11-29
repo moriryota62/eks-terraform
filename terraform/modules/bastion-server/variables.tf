@@ -33,6 +33,7 @@ variable "ec2_root_block_volume_size" {
 variable "ec2_key_name" {
   description = "踏み台サーバーのインスタンスにsshログインするためのキーペア名"
   type        = string
+  default     = null
 }
 
 variable "sg_allow_access_cidrs" {

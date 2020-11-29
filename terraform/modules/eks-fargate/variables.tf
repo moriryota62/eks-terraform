@@ -15,6 +15,11 @@ variable "cluster_name" {
   type        = string
 }
 
+variable "fargate_profile_name" {
+  description = "faragateプロファイルの名前"
+  type        = string
+}
+
 variable "fargate_iam_arn" {
   description = "fargateに付与するiamロールのARN"
   type        = string

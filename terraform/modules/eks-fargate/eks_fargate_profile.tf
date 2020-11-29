@@ -1,6 +1,6 @@
 resource "aws_eks_fargate_profile" "this" {
   cluster_name           = var.cluster_name
-  fargate_profile_name   = "${var.base_name}-${var.namespace_name}"
+  fargate_profile_name   = var.fargate_profile_name
   pod_execution_role_arn = var.fargate_iam_arn
   subnet_ids             = var.private_subnet_ids
 
@@ -11,7 +11,7 @@ resource "aws_eks_fargate_profile" "this" {
 
   tags = merge(
     {
-      "Name" = "${var.base_name}-${var.namespace_name}"
+      "Name" = var.fargate_profile_name
     },
     var.tags
   )

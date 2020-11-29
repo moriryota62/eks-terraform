@@ -30,3 +30,14 @@ variable "vpc_cidr" {
   description = "EFSへの接続を許可するVPCのCIDR"
   type        = string
 }
+
+variable "access_points" {
+  description = "アクセスポイントの設定 path=アクセスポイントにするパス(/から絶対パス) owner_gid=アクセスポイントのgid owner_uid=アクセスポイントのuid permissions=アクセスポイントのパーミッション"
+  type = map(object({
+    path        = string
+    owner_gid   = number
+    owner_uid   = number
+    permissions = string
+  }))
+  default = {}
+}
