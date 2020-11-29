@@ -37,20 +37,20 @@ locals {
   ## efs
   ### 以下はEFSに/test1と/test2のアクセスポイントを作成する記述例です。
   ### EFS CSI Driverを使用してEKSからEFSを使用する場合はアクセスポイントを用途ごとに作成します。
-  ### EFS provisonerを使用してEKSからEFSを使用する場合は`efs_access_points = {}`とするかコメントアウトしてください。
+  ### EFS provisionerを使用してEKSからEFSを使用する場合は`efs_access_points = {}`としてください。
   efs_access_points = {
-    "/test1" = {
-      path        = "/test1",
-      owner_gid   = 0,
-      owner_uid   = 0,
-      permissions = "0777"
-    },
-    "/test2" = {
-      path        = "/test2",
-      owner_gid   = 0,
-      owner_uid   = 0,
-      permissions = "0777"
-    }
+//    "/test1" = {
+//      path        = "/test1",
+//      owner_gid   = 0,
+//      owner_uid   = 0,
+//      permissions = "0777"
+//    },
+//    "/test2" = {
+//      path        = "/test2",
+//      owner_gid   = 0,
+//      owner_uid   = 0,
+//      permissions = "0777"
+//    }
   }
 
   ## eks

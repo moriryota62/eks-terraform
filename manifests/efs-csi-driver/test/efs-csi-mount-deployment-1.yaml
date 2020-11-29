@@ -2,17 +2,17 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   labels:
-    app: efs-mount-1
-  name: efs-mount-1
+    app: efs-mount-csi-1
+  name: efs-mount-csi-1
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: efs-mount-1
+      app: efs-mount-csi-1
   template:
     metadata:
       labels:
-        app: efs-mount-1
+        app: efs-mount-csi-1
         worker: fargate
     spec:
       containers:
@@ -24,4 +24,4 @@ spec:
       volumes:
       - name: persistent-storage
         persistentVolumeClaim:
-          claimName: efs-claim-1
+          claimName: efs-claim-csi-1

@@ -13,6 +13,15 @@ cd <eks-terraformのルートディレクトリ>
 export DIR=`pwd`
 ```
 
+以降の手順で複数のファイルで使用する基本設定値を環境変数に設定しておきます。
+
+``` sh
+export REGION=us-east-2
+export PJ=pj
+export ENV=env
+export OWNER=owner
+```
+
 kubeconfigを設定していない場合は環境変数に設定します。
 
 ``` sh
@@ -74,29 +83,190 @@ fargate-5d9865d5c-j4gcb   1/1     Running   0          3m36s   10.1.20.160   far
 # EFSのマウント
 
 EKSでEFSを使用する方法はいくつかあります。
-代表的な方法として`EFS Provisoner`を使用する方法と`EFS CSI Driver`を使用する方法を紹介します。
+代表的な方法として`EFS Provisioner`を使用する方法と`EFS CSI Driver`を使用する方法を紹介します。
+両方の方法を同時に採用することもできます。
 
 `EFS CSI Driver`は新たに開発されたものでいずれはこちらの方法がスタンダードになると思われます。
 しかし、2020/11時点ではまだ開発中であり、Dynamic Volume Provisoning（以下、DVP）に対応していません。
 そのため、用途ごとに領域を確保したい場合、手動でアクセスポイントを作成し、PersistentVolumeをapplyする手間が必要です。
-一方、Fargateで起動しているPodに対してもボリューム提供できる点は`EFS Provisoner`にはない利点です。
+一方、Fargateで起動しているPodに対してもボリューム提供できる点は`EFS Provisioner`にはない利点です。
 
-`EFS Provisoner`は上記`EFS CSI Driver`のような手間はいりません。
+`EFS Provisioner`は上記`EFS CSI Driver`のような手間はいりません。
 ですが、Fargateで起動しているPodにはボリューム提供ができません。
 一方、DVPが可能な点は`EFS CSI Driver`にはない利点です。
 
-つまり、以下2点をポイントにどちらかの方法を選択します。
+## EFS Provisionerを使用する場合
 
-- DVP無しが許容できるか（運用の手間）
-- Fargateでボリューム共有が必要なPodを動かすか
+[EFS Provisioner](https://github.com/kubernetes-retired/external-storage/tree/master/aws/efs)を導入します。
 
-## EFS Provisonerを使用する場合
+EFS Provisionerのマニフェストは上記公式のレポジトリにありますが、以下ディレクトリにも配置しています。
+なお、公式のマニフェストはDeploymentのapiVersionが`extensions/v1beta1`になっているなどK8s v1.15まででしか使えない記述があります。
+以下ディレクトリに配置しているマニフェストはK8s v1.18でも動作するように修正してあります。
+また、EFS Provisioner関連のK8sリソースはNamespaces:`efs-provisioner`に作成するようにも修正しています。
+
+``` sh
+cd $DIR/manifests/efs-provisioner
+```
+
+`manifest.yaml`に含まれる`yourEFSsystemid`と`yourEFSregion`を修正します。
+`yourEFSsystemid`はterraform実行後に表示される`efs_id`の値を使います。
+以下は修正するコマンド例です。
+
+**Linuxの場合**
+
+``` sh
+sed -i -e 's:yourEFSregion:'$REGION':g' manifest.yaml
+sed -i -e 's:yourEFSsystemid:fs-d05b35a8:g' manifest.yaml
+```
+
+**macの場合**
+
+``` sh
+sed -i "" -e 's:yourEFSregion:'$REGION':g' manifest.yaml
+sed -i "" -e 's:yourEFSsystemid:fs-d05b35a8:g' manifest.yaml
+```
+
+まずEFS ProvisionerをデプロイするNamespace:`efs-provisioner`を作ります。
+
+``` sh
+kubectl apply -f ns.yaml
+```
+
+続いて、EFS Provisionerをデプロイします。
+
+``` sh
+kubectl apply -f rbac.yaml -f manifest.yaml
+```
+
+EFS Provisionerが作成できたことを確認します。以下の様にPodがRunningになっていれば良いです。
+
+``` sh
+kubectl get pod -n efs-provisioner
+```
+
+表示例
+
+```
+NAME                              READY   STATUS    RESTARTS   AGE
+efs-provisioner-bc5dc9c84-pvdcm   1/1     Running   0          67s
+```
+
+また、StorageClassを確認し、`aws-efs`があることを確認します。
+
+``` sh
+kubectl get storageclass
+```
+
+表示例
+
+```
+NAME            PROVISIONER             RECLAIMPOLICY   VOLUMEBINDINGMODE      ALLOWVOLUMEEXPANSION   AGE
+aws-efs         example.com/aws-efs     Delete          Immediate              false                  3m49s
+gp2 (default)   kubernetes.io/aws-ebs   Delete          WaitForFirstConsumer   false                  56m
+```
+
+以上でEFS Provisionerの準備は完了です。
+テスト用のマニフェストを使用し、EFSのマウントができるか確認します。
+テスト用のマニフェストを配置しているディレクトリに移動します。
+
+``` sh
+cd $DIR/manifests/efs-provisioner/test
+```
+
+`efs-mount-1`と`efs-mount-2`の2つのDeploymentとPersistentVolumeClaimを用意しています。
+Deploymentでは/test1または/test2にEFSをマウントする様に記述しています。
+以下コマンドでapplyします。
+
+``` sh
+kubectl apply -f ./
+```
+
+デプロイできたか確認します。どちらもRunningになれば良いです。
+
+``` sh
+kubectl get pod
+```
+
+表示例
+
+```
+NAME                           READY   STATUS    RESTARTS   AGE
+efs-mount-1-5dfcc844dc-xtml9   1/1     Running   0          32s
+efs-mount-2-7c5ff5487b-5pkz5   1/1     Running   0          31s
+```
+
+それぞれEFSでマウントしている領域に書き込みします。
+以下はコマンド例です。Pod名は自身の環境にあわせて修正してください。
+
+``` sh
+kubectl exec efs-mount-1-5dfcc844dc-xtml9 touch /test1/efs-test-1
+kubectl exec efs-mount-2-7c5ff5487b-5pkz5 touch /test2/efs-test-2
+```
+
+Podを削除します。
+以下はコマンド例です。Pod名は自身の環境にあわせて修正してください。
+
+``` sh
+kubectl delete pod efs-mount-1-5dfcc844dc-xtml9
+kubectl delete pod efs-mount-2-7c5ff5487b-5pkz5
+```
+
+しばらくしてからPodがセルフヒーリングされていることを確認します。
+
+``` sh
+kubectl get pod
+```
+
+表示例
+
+```
+NAME                           READY   STATUS    RESTARTS   AGE
+efs-mount-1-5dfcc844dc-pn2bf   1/1     Running   0          39s
+efs-mount-2-7c5ff5487b-dnbqc   1/1     Running   0          24s
+```
+
+セルフヒーリング後のPodを確認し、ボリュームが永続化できていることを確認します。
+以下はコマンド例です。Pod名は自身の環境にあわせて修正してください。
+
+``` sh
+kubectl exec efs-mount-1-5dfcc844dc-pn2bf ls /test1/
+kubectl exec efs-mount-2-7c5ff5487b-dnbqc ls /test2/
+```
+
+また、以下のようにPodをスケールさせます。
+
+``` sh
+kubectl scale deployment efs-mount-1 --replicas=3
+```
+
+Podがスケールされていることを確認します。
+
+``` sh
+kubectl get pod
+```
+
+表示例
+
+```
+NAME                           READY   STATUS    RESTARTS   AGE
+efs-mount-1-5dfcc844dc-jbwhf   1/1     Running   0          39s
+efs-mount-1-5dfcc844dc-pn2bf   1/1     Running   0          4m19s
+efs-mount-1-5dfcc844dc-wfr6g   1/1     Running   0          39s
+efs-mount-2-7c5ff5487b-dnbqc   1/1     Running   0          4m4s
+```
+
+`efs-mount-1`のさきほど確認したのとは違うPodを指定してボリュームが共有できていることを確認します。
+以下はコマンド例です。Pod名は自身の環境にあわせて修正してください。
+
+``` sh
+kubectl exec efs-mount-1-5dfcc844dc-jbwhf ls /test1/
+```
 
 ## EFS CSI Driverを使用する場合
 
 現在、EFS CSI Driverが開発されています。
-これを使えば今まではProvisoner Pod経由でEFSを使用していましたが、各Podが直接EFSをマウントできるようになります。
-まだ開発段階のため、DVPには対応していませんが、将来的にはEFS ProvisonerではなくEFS CSI Driverが主流になると思われます。
+これを使えば今まではProvisioner Pod経由でEFSを使用していましたが、各Podが直接EFSをマウントできるようになります。
+まだ開発段階のため、DVPには対応していませんが、将来的にはEFS ProvisionerではなくEFS CSI Driverが主流になると思われます。
 
 EFS CSI Driver関連のマニフェストを配置したディレクトリに移動します。
 
@@ -119,14 +289,27 @@ kubectl apply -f efs-csi-sc.yaml
 kubectl get storageclass
 ```
 
+以上でEFS CSI Driverの準備は完了です。
+テスト用のマニフェストを使用し、EFSのマウントができるか確認します。
+テスト用のマニフェストを配置しているディレクトリに移動します。
+
+``` sh
+cd $DIR/manifests/efs-csi-driver/test
+```
+
 次に実際にEFS CSI Driverを使用してEFSをマウントする`Deployment`、`PersistentVolumeClaim`、`PersistentVolume`をデプロイします。
 EFS CSI DriverはまだDVPに対応していないため、あらかじめPersistentVolumeを手動で作成する必要があります。
 また、PersistentVolumeのマニフェストはEFSのファイルシステムIDを指定するため、自身の環境にあわせて修正してください。
+なお、EFS CSI DriverでEFSをマウントするとEFSの/をマウントしてしまいます。
+複数用途でひとつのEFSを利用する場合、EFSアクセスポイントで用途ごとのアクセスポイントを作成します。
+PersistenVolumeのマニフェストのvolumeHandleには`<EFS ID>::<アクセスポイントID>`という形式で指定します。
 
-`efs-csi-pv.yaml`を自身の環境にあわせて修正したら以下コマンドでデプロイします。
+`efs-csi-pv-1.yaml`および`efs-csi-pv-2.yaml`を自身の環境にあわせて修正したら以下コマンドでデプロイします。
 
 ``` sh
-kubectl apply -f efs-csi-mount-deployment.yaml -f efs-csi-pvc.yaml -f efs-csi-pv.yaml
+kubectl apply -f efs-csi-pv-1.yaml -f efs-csi-pv-2.yaml
+kubectl apply -f efs-csi-pvc-1.yaml -f efs-csi-pvc-2.yaml
+kubectl apply -f efs-csi-mount-deployment-1.yaml -f efs-csi-mount-deployment-2.yaml
 kubectl get pod
 ```
 

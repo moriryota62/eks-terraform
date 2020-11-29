@@ -1,0 +1,27 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: efs-mount-csi-2
+  name: efs-mount-csi-2
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: efs-mount-csi-2
+  template:
+    metadata:
+      labels:
+        app: efs-mount-csi-2
+        worker: fargate
+    spec:
+      containers:
+      - image: nginx
+        name: nginx
+        volumeMounts:
+        - name: persistent-storage
+          mountPath: /test2
+      volumes:
+      - name: persistent-storage
+        persistentVolumeClaim:
+          claimName: efs-claim-csi-2

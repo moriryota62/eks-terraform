@@ -42,6 +42,15 @@ cd $DIR/terraform/tf-backend
 
 `tf-backend.tf`ファイルを編集します。編集が必要な箇所はさきほど環境変数に設定した基本設定値です。以下コマンドで置換できるようにしてあります。
 
+**Linuxの場合**
+
+``` sh
+sed -i -e 's:REGION:'$REGION':g' tf-backend.tf
+sed -i -e 's:PJ:'$PJ':g' tf-backend.tf
+sed -i -e 's:ENV:'$ENV':g' tf-backend.tf
+sed -i -e 's:OWNER:'$OWNER':g' tf-backend.tf
+```
+
 **macの場合**
 
 ``` sh
@@ -137,9 +146,9 @@ KMSについてのパラメータはとくに指定しません。
 
 EKSでのEFSの扱いかたによって`local_value.tf`内のefs module関連パラメータの指定が変わります。
 
-### EFS provisoner を使用する場合
+### EFS provisioner を使用する場合
 
-`local_value.tf`内の`efs_access_points`はとくに設定不要です。コメントアウトするか、`efs_access_points = {}`と設定します。terraform実行後のoutputに`efs_id`が表示されます。これらはEKSのK8sマニフェストで使用するため値を控えておきます。
+`local_value.tf`内の`efs_access_points`を`efs_access_points = {}`と設定します。terraform実行後のoutputに`efs_id`が表示されます。これらはEKSのK8sマニフェストで使用するため値を控えておきます。
 
 ### EFS CSI Driver を使用する場合
 
