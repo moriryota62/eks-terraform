@@ -5,8 +5,8 @@ metadata:
   name: efs-provisioner
   namespace: efs-provisioner
 data:
-  file.system.id: fs-d05b35a8
-  aws.region: us-east-2
+  file.system.id: yourEFSsystemid
+  aws.region: yourEFSregion
   provisioner.name: example.com/aws-efs
   dns.name: ""
 ---
@@ -59,7 +59,7 @@ spec:
       volumes:
         - name: pv-volume
           nfs:
-            server: fs-d05b35a8.efs.us-east-2.amazonaws.com
+            server: yourEFSsystemid.efs.yourEFSregion.amazonaws.com
             path: /
 ---
 kind: StorageClass

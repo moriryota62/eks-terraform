@@ -9,3 +9,7 @@ output "efs_id" {
 output "access_points" {
   value = module.efs.access_point_id
 }
+
+output "network" {
+  value = module.network
+}
