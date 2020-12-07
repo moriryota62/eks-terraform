@@ -450,16 +450,16 @@ kubectl delete -f ./
 
 IngressはK8s内のL7ロードバランサのようなものです。
 K8s内に作成したサービス（アプリケーション）をK8s外へ公開する際によく使います。
-パスベースのルーティングをIngressを使用して実装します。
+ホストベースのルーティングをIngressを使用して実装します。
 
 IngressはIngressの動作をコントロールする`Ingress Controller`とK8s内のリソースである`Ingress`の2つで成り立ちます。
 `Ingress Controller`にはいくつか種類があります。[こちら](https://kubernetes.io/ja/docs/concepts/services-networking/ingress-controllers/)を参照ください。
-EKSの場合、`NGINX Ingress Controller`か`ALB Ingress Controller`のいずれかが良いでしょう。
+EKSの場合、`NGINX Ingress Controller`か`AWS Load Balancer Controller`のいずれかが良いでしょう。
 本手順ではこの2つの導入方法について解説します。
 
-[NGINX Ingress Controller](https://kubernetes.io/ja/docs/concepts/services-networking/ingress-controllers/)は古くからあるIngress ControllerでAWS以外のクラウドでも同じように使うことのできるコントローラです。K8s内にNginxのPodとService type:LBでAWSにELBをデプロイし連携させることで動作します。
+[NGINX Ingress Controller](https://kubernetes.io/ja/docs/concepts/services-networking/ingress-controllers/)は古くからあるIngress ControllerでAWS以外のクラウドでも同じように使うことのできるコントローラです。K8s内にControllerのPodとService type:LBでAWSにELBをデプロイし連携させることで動作します。`複数のIngressで一つのELBを集約できる`のがメリットです。
 
-[ALB Ingress Controller](https://github.com/kubernetes-sigs/aws-load-balancer-controller)はAWSのALBを使用したIngress Controllerです。
+[AWS Load Balancer Controller](https://github.com/kubernetes-sigs/aws-load-balancer-controller)はAWSのALBを使用したIngress Controllerです。以前は`ALB Ingress Controller`と呼ばれていましたが変わりました。K8s内にControllerのPodをデプロイします。`IngressごとにLBを作成するため集約できません。`
 
 Ingressの前にAWSのRoute53にテスト用のプライベートホストゾーンとレコードを作成します。
 この手順ではテスト用の一時的なものであるためコマンドで作成しますが、恒久的に使用するドメインの場合はTerraformで作成してください。
@@ -471,7 +471,7 @@ Ingressの前にAWSのRoute53にテスト用のプライベートホストゾー
 
 ``` sh
 aws route53 create-hosted-zone --name eks-test --vpc VPCRegion=$REGION,VPCId=<VPCID> --hosted-zone-config Comment=eks-test,PrivateZone=true --caller-reference <任意の文字列>
-aws route53 create-hosted-zone --name eks-test --vpc VPCRegion=$REGION,VPCId=vpc-00dc9879724c71855 --hosted-zone-config Comment=eks-test,PrivateZone=true --caller-reference 202012051924
+aws route53 create-hosted-zone --name eks-test --vpc VPCRegion=$REGION,VPCId=vpc-08c0631a2837a950a --hosted-zone-config Comment=eks-test,PrivateZone=true --caller-reference 202012071919
 ```
 
 ホストゾーンができたことを確認します。
@@ -506,7 +506,237 @@ aws route53 list-hosted-zones
 
 Ingress Controllerに[NGINX Ingress Controller](https://kubernetes.io/ja/docs/concepts/services-networking/ingress-controllers/)を使用します。
 
-## ALB Ingressを使用する場合
+NGINX Ingress関連のマニフェストを配置したディレクトリに移動します。
+
+``` sh
+cd $DIR/manifests/nginx-ingress
+```
+
+配置してある`deploy.yaml`をapplyします。
+
+``` sh
+kubectl apply -f deploy.yaml
+```
+
+以下コマンドでNGINX Ingress Controllerがデプロイされていることを確認します。
+
+``` sh
+kubectl get pod -n ingress-nginx
+```
+
+表示例
+
+```
+NAME                                       READY   STATUS      RESTARTS   AGE
+ingress-nginx-admission-create-xzft5       0/1     Completed   0          6m16s
+ingress-nginx-admission-patch-9cp6r        0/1     Completed   0          6m15s
+ingress-nginx-controller-ddf87ddc8-mrtqq   1/1     Running     0          6m20s
+```
+
+また、Serviceもデプロイされていることを確認します。
+
+``` sh
+kubectl get svc -n ingress-nginx
+```
+
+表示例。
+Type:LoadBalancerのServiceがデプロイされていることを確認します。
+また、EXTERNAL-IPを控えて起きます。
+Route53のレコード作成に使用します。
+
+``` 
+NAME                                 TYPE           CLUSTER-IP       EXTERNAL-IP                                                                     PORT(S)                      AGE
+ingress-nginx-controller             LoadBalancer   172.20.1.67      a97ed4bfe1eea425fa26f445f2c76927-f72262769e8aa441.elb.us-east-2.amazonaws.com   80:30003/TCP,443:31777/TCP   7m44s
+ingress-nginx-controller-admission   ClusterIP      172.20.226.229   <none>                                                                          443/TCP                      7m45s
+```
+
+以下コマンドでAWSにNLBが作成されていることも確認しておきましょう。また、CanonicalHostedZoneIdも確認します。
+
+``` sh
+aws elbv2 describe-load-balancers --region $REGION 
+```
+
+表示例。環境によってはもっとたくさんのLBが表示されるかもしません。
+get svcで表示されたEXTERNAL-IPと同じDNSNameのLBがあるはずです。
+また、CanonicalHostedZoneIdを控えておきます。
+Route53のレコード作成に使用します。
+
+```
+{
+    "LoadBalancers": [
+        {
+            "LoadBalancerArn": "arn:aws:elasticloadbalancing:us-east-2:456247443832:loadbalancer/net/a97ed4bfe1eea425fa26f445f2c76927/f72262769e8aa441",
+            "DNSName": "a97ed4bfe1eea425fa26f445f2c76927-f72262769e8aa441.elb.us-east-2.amazonaws.com",
+            "CanonicalHostedZoneId": "ZLMOA37VPKANP",
+            "CreatedTime": "2020-12-06T10:46:39.539000+00:00",
+            "LoadBalancerName": "a97ed4bfe1eea425fa26f445f2c76927",
+            "Scheme": "internet-facing",
+            "VpcId": "vpc-0339f07e684951883",
+            "State": {
+                "Code": "active"
+            },
+            "Type": "network",
+            "AvailabilityZones": [
+                {
+                    "ZoneName": "us-east-2c",
+                    "SubnetId": "subnet-04ebde1bfc22bbc54",
+                    "LoadBalancerAddresses": []
+                },
+                {
+                    "ZoneName": "us-east-2b",
+                    "SubnetId": "subnet-0c69f8a86006e08e9",
+                    "LoadBalancerAddresses": []
+                }
+            ],
+            "IpAddressType": "ipv4"
+        }
+    ]
+}
+```
+
+これでNGINX Ingress Controllerがデプロイできました。
+
+続いて、Route53にワイルドカードレコードを追加します。
+`*.eks-test`へのアクセスはすべて上記で確認したNLBに名前解決されるように登録します。
+`recode.json`の`HostedZoneId`と`DNSName`を修正してください。
+なお、`HostedZoneId`はService Type:LoadBalancerデプロイ後に確認した**CanonicalHostedZoneId**を指定します。
+**ホストゾーンのIDではない**ため注意してください。
+`DNSName`はService Type:LoadBalancerデプロイ後に確認した**EXTERNAL-IP**を指定します。
+また、ホストゾーンが`eks-tset`でない場合は`Name`も修正してください。
+
+``` sh
+vi recode.json
+```
+
+修正例
+
+``` json
+{
+    "Comment": "Creating Alias resource record sets in Route 53",
+    "Changes": [{
+               "Action": "CREATE",
+               "ResourceRecordSet": {
+                           "Name": "*.eks-test",#ドメインが違う場合はここも変える
+                           "Type": "A",
+                           "AliasTarget":{
+                                   "HostedZoneId": "ZLMOA37VPKANP",#ここにCanonicalHostedZoneId
+                                   "DNSName": "a9674b1a36c76457fbd81f1c3144c713-4a38fa0797d50e60.elb.us-east-2.amazonaws.com",#ここにEXTERNAL-IP
+                                   "EvaluateTargetHealth": false
+                             }}
+                         }]
+}
+```
+
+`recode.json`を修正したら以下のコマンドを実行します。`hosted-zone-id`は**ホストゾーンのIDを指定**します。
+ロードバランサーのCanonicalHostedZoneIdではないため注意してください。
+
+``` sh
+aws route53 change-resource-record-sets --hosted-zone-id Z05116041JLKENQ1L8UPE --change-batch file://recode.json
+```
+
+以上でIngressを使うための準備が整いました。
+実際にサンプルのマニフェストを使用してIngressの動作を確認します。
+
+サンプルマニフェストを配置してディレクトリに移動してください。
+
+``` sh
+cd $DIR/manifests/nginx-ingress/test
+```
+
+サンプルマニフェストをapplyします。
+このサンプルマニフェストはnic-ingress-1および2という名前のPodを作成します。
+またIngressは`nic-ingress-1.eks-test`および`nic-ingress-2.eks-test`で公開しています。
+これらのホストでアクセスするとELBを経由し、Ingress Controllerへ届き、Ingress Controllerが宛先のホストを判断して然るべきServiceへトラフィックを流します。
+
+``` sh
+kubectl apply -f ./
+```
+
+サンプルマニフェストで作成したリソースを確認します。
+
+``` sh
+kubectl get pod,svc,ingress
+```
+
+nic-ingress-1および2という名前のPod、Service、Ingressができるていることを確認します。
+
+```
+NAME                                 READY   STATUS    RESTARTS   AGE
+pod/nic-ingress-1-59fb6644fc-dbpkf   1/1     Running   0          16m
+pod/nic-ingress-2-7b847f6797-dkz9r   1/1     Running   0          16m
+
+NAME                    TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)   AGE
+service/kubernetes      ClusterIP   172.20.0.1      <none>        443/TCP   65m
+service/nic-ingress-1   ClusterIP   172.20.95.99    <none>        80/TCP    16m
+service/nic-ingress-2   ClusterIP   172.20.225.97   <none>        80/TCP    16m
+
+NAME                               CLASS    HOSTS                    ADDRESS                                                                         PORTS   AGE
+ingress.extensions/nic-ingress-1   <none>   nic-ingress-1.eks-test   a9674b1a36c76457fbd81f1c3144c713-4a38fa0797d50e60.elb.us-east-2.amazonaws.com   80      8m17s
+ingress.extensions/nic-ingress-2   <none>   nic-ingress-2.eks-test   a9674b1a36c76457fbd81f1c3144c713-4a38fa0797d50e60.elb.us-east-2.amazonaws.com   80      8m16s
+```
+
+実際にIngressでルーティングされるか確認します。
+`*.eks-test`はVPC内でのみ使える名前です。
+そのため、踏み台サーバなどEKSと同じVPCに属するEC2インスタンスへログインし、以下のコマンドを実行します。
+
+``` sh
+curl nic-ingress-1.eks-test
+```
+
+以下の様に`nic-ingress-1`へ到達できていることが確認できます。
+
+```
+nic-ingress-1
+```
+
+続いて`nic-ingress-2.eks-test`へcurlします。
+
+``` sh
+curl nic-ingress-2.eks-test
+```
+
+以下の様に`nic-ingress-2`へ到達できていることが確認できます。
+
+```
+nic-ingress-2
+```
+
+以上のようにIngressを使いホストベースのルーティングが行えました。
+NGINX Ingress Controllerの場合、公開用のELBをIngress Controller用の1つに抑えることができます。
+
+サンプル用のリソースを削除します。
+
+``` sh
+kubectl delete -f ./
+cd ../
+```
+
+サンプル用のRoute53レコードも削除します。
+削除する前に`recode.json`を修正します。
+以下コマンドを実行ください。
+
+**Linuxの場合**
+
+``` sh
+sed -i -e "s/CREATE/DELETE/g" recode.json
+```
+
+**macの場合**
+
+``` sh
+sed -i "" -e "s/CREATE/DELETE/g" recode.json
+```
+
+`recode.json`を修正したら以下コマンドでレコードを削除します。
+Ingress Controllerやホストゾーンも不要であれば以下コマンドで削除します。
+
+``` sh
+aws route53 change-resource-record-sets --hosted-zone-id Z05116041JLKENQ1L8UPE --change-batch file://recode.json
+kubectl delete -f deploy.yaml
+aws route53 delete-hosted-zone --id Z05116041JLKENQ1L8UPE 
+```
+
+## AWS Load Balancer Controllerを使用する場合
 
 # IAM Role for SAによるPodへのIAMロール付与
 

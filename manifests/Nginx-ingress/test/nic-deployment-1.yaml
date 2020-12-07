@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: nic-ingress-1
+  name: nic-ingress-1
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nic-ingress-1
+  template:
+    metadata:
+      labels:
+        app: nic-ingress-1
+    spec:
+      containers:
+      - image: nginx
+        name: nginx
+        volumeMounts:
+        - name: index
+          mountPath: /usr/share/nginx/html
+      initContainers:
+      - image: nginx
+        name: init-nginx
+        command: ["/bin/sh","-c","echo nic-ingress-1 > /tmp/index.html"]
+        volumeMounts:
+        - name: index
+          mountPath: /tmp
+      volumes:
+      - name: index
+        emptyDir: {}

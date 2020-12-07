@@ -1,0 +1,14 @@
+{
+    "Comment": "Creating Alias resource record sets in Route 53",
+    "Changes": [{
+               "Action": "CREATE",
+               "ResourceRecordSet": {
+                           "Name": "*.eks-test",
+                           "Type": "A",
+                           "AliasTarget":{
+                                   "HostedZoneId": "ZLMOA37VPKANP",
+                                   "DNSName": "a9674b1a36c76457fbd81f1c3144c713-4a38fa0797d50e60.elb.us-east-2.amazonaws.com",
+                                   "EvaluateTargetHealth": false
+                             }}
+                         }]
+}
