@@ -155,3 +155,16 @@ module "iam-for-sa" {
   k8s_sa                      = local.iamsa_k8s_sa
   attach_policy_arn           = local.iamsa_attach_policy_arn
 }
+
+module "route53" {
+  source = "../modules/route53"
+
+  # common parameter
+  tags      = local.tags
+  base_name = local.base_name
+
+  # module parameter
+  zone_name = local.zone_name
+  vpc_id    = module.network.vpc_id
+  recods    = local.recods
+}

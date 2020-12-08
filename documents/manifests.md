@@ -462,44 +462,7 @@ EKSの場合、`NGINX Ingress Controller`か`AWS Load Balancer Controller`のい
 [AWS Load Balancer Controller](https://github.com/kubernetes-sigs/aws-load-balancer-controller)はAWSのALBを使用したIngress Controllerです。以前は`ALB Ingress Controller`と呼ばれていましたが変わりました。K8s内にControllerのPodをデプロイします。`IngressごとにLBを作成するため集約できません。`
 
 Ingressの前にAWSのRoute53にテスト用のプライベートホストゾーンとレコードを作成します。
-この手順ではテスト用の一時的なものであるためコマンドで作成しますが、恒久的に使用するドメインの場合はTerraformで作成してください。
-また、すでにドメイン取得済の場合はそのドメインを使用しても構いません。
-
-まずは`eks-test`ホストゾーンを以下コマンドで作成します。
-`VPCId`は自身の環境に合わせて指定ください。(vpcidはterraformのoutputにも表示されます。)
-`caller-reference`は任意の文字列で良いので実行時の日付（YYYYMMDDhhmm）など好きな文字列を指定ください。
-
-``` sh
-aws route53 create-hosted-zone --name eks-test --vpc VPCRegion=$REGION,VPCId=<VPCID> --hosted-zone-config Comment=eks-test,PrivateZone=true --caller-reference <任意の文字列>
-aws route53 create-hosted-zone --name eks-test --vpc VPCRegion=$REGION,VPCId=vpc-08c0631a2837a950a --hosted-zone-config Comment=eks-test,PrivateZone=true --caller-reference 202012071919
-```
-
-ホストゾーンができたことを確認します。
-
-``` sh
-aws route53 list-hosted-zones
-```
-
-表示例。環境によってはもっとたくさんのホストゾーンが表示されるかもしません。
-
-```
-{
-    "HostedZones": [
-        {
-            "Id": "/hostedzone/Z07357812CRW9HLLUA1A4",
-            "Name": "eks-test.",
-            "CallerReference": "202012051924",
-            "Config": {
-                "Comment": "eks-test",
-                "PrivateZone": true
-            },
-            "ResourceRecordSetCount": 2
-        }
-    ]
-}
-```
-
-以上でホストゾーンの準備は終わりです。
+サンプルのTerraformではRoute53関連のモジュールを用意しており、`eks-test`という名前のVPCローカルなホストゾーンを作成しています。
 続いてワイルドカードレコードを追加しますが、この手順はIngress Controller作成後に行います。
 
 ## NGINX Ingressを使用する場合
@@ -598,40 +561,27 @@ Route53のレコード作成に使用します。
 
 続いて、Route53にワイルドカードレコードを追加します。
 `*.eks-test`へのアクセスはすべて上記で確認したNLBに名前解決されるように登録します。
-`recode.json`の`HostedZoneId`と`DNSName`を修正してください。
-なお、`HostedZoneId`はService Type:LoadBalancerデプロイ後に確認した**CanonicalHostedZoneId**を指定します。
+terraformのディレクトリへ移動します。
+
+``` sh
+cd $DIR/terraform/main
+```
+
+`local_values.tf`のroute53 module関連パラメータにある`recods`を設定します。
+`recods`の`name`には登録したいレコード（*.eks-test）を指定します。
+`elb_name`にはService Type:LoadBalancerデプロイ後に確認した**EXTERNAL-IP**を指定します。
+`elb_zone_id`にはService Type:LoadBalancerデプロイ後に確認した**CanonicalHostedZoneId**を指定します。
 **ホストゾーンのIDではない**ため注意してください。
-`DNSName`はService Type:LoadBalancerデプロイ後に確認した**EXTERNAL-IP**を指定します。
-また、ホストゾーンが`eks-tset`でない場合は`Name`も修正してください。
 
 ``` sh
-vi recode.json
+vi local_values.tf
 ```
 
-修正例
-
-``` json
-{
-    "Comment": "Creating Alias resource record sets in Route 53",
-    "Changes": [{
-               "Action": "CREATE",
-               "ResourceRecordSet": {
-                           "Name": "*.eks-test",#ドメインが違う場合はここも変える
-                           "Type": "A",
-                           "AliasTarget":{
-                                   "HostedZoneId": "ZLMOA37VPKANP",#ここにCanonicalHostedZoneId
-                                   "DNSName": "a9674b1a36c76457fbd81f1c3144c713-4a38fa0797d50e60.elb.us-east-2.amazonaws.com",#ここにEXTERNAL-IP
-                                   "EvaluateTargetHealth": false
-                             }}
-                         }]
-}
-```
-
-`recode.json`を修正したら以下のコマンドを実行します。`hosted-zone-id`は**ホストゾーンのIDを指定**します。
-ロードバランサーのCanonicalHostedZoneIdではないため注意してください。
+修正したらterraformでレコードを作成します。
 
 ``` sh
-aws route53 change-resource-record-sets --hosted-zone-id Z05116041JLKENQ1L8UPE --change-batch file://recode.json
+terraform apply 
+> yes
 ```
 
 以上でIngressを使うための準備が整いました。
@@ -708,32 +658,13 @@ NGINX Ingress Controllerの場合、公開用のELBをIngress Controller用の1�
 
 ``` sh
 kubectl delete -f ./
+```
+
+Ingress Controllerも不要であれば以下コマンドで削除します。
+
+``` sh
 cd ../
-```
-
-サンプル用のRoute53レコードも削除します。
-削除する前に`recode.json`を修正します。
-以下コマンドを実行ください。
-
-**Linuxの場合**
-
-``` sh
-sed -i -e "s/CREATE/DELETE/g" recode.json
-```
-
-**macの場合**
-
-``` sh
-sed -i "" -e "s/CREATE/DELETE/g" recode.json
-```
-
-`recode.json`を修正したら以下コマンドでレコードを削除します。
-Ingress Controllerやホストゾーンも不要であれば以下コマンドで削除します。
-
-``` sh
-aws route53 change-resource-record-sets --hosted-zone-id Z05116041JLKENQ1L8UPE --change-batch file://recode.json
 kubectl delete -f deploy.yaml
-aws route53 delete-hosted-zone --id Z05116041JLKENQ1L8UPE 
 ```
 
 ## AWS Load Balancer Controllerを使用する場合

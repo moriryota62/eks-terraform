@@ -79,4 +79,14 @@ locals {
   iamsa_k8s_namespace     = "default"
   iamsa_k8s_sa            = "iam-test"
   iamsa_attach_policy_arn = "arn:aws:iam::aws:policy/CloudWatchLogsFullAccess"
+
+  # Route53
+  zone_name = "eks-test"
+  recods    = {
+#    "*.eks-test" = {
+#      name        = "*.eks-test"
+#      elb_name    = "abab31c7b00e74ccab1a608e44d824f8-657a3a5050848a1a.elb.us-east-2.amazonaws.com"
+#      elb_zone_id = "ZLMOA37VPKANP"
+#    }
+  }
 }

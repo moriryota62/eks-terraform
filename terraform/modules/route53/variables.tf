@@ -20,10 +20,12 @@ variable "vpc_id" {
   type        = string
 }
 
-variable "recode" {
+variable "recods" {
   description = "登録するレコード情報"
   type = map(object({
-    name    = string
-    records = list(string)
+    name        = string
+    elb_name    = string
+    elb_zone_id = string
   }))
+  default = null
 }

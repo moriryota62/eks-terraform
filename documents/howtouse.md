@@ -189,6 +189,16 @@ iam for saを設定する場合、`local_value.tf`内のiam for sa module関連�
 
 複数のIAMロールおよびServiceAccountを連携する場合、`maint.tf`内の`module "iam-for-sa"`をブロックごとコピペし、モジュール名や`local.〜`のパラメータ名を変更し、`local_value.tf`で値を設定してください。
 
+## route53
+
+Route53のホストゾーンおよびレコードを作成します。
+
+Route53を設定しない場合、`main.tf`の`module "route53"`をブロックごとコメントアウトしてください。
+
+Route53を設定する場合、`local_value.tf`内のroute53 module関連パラメータを指定してください。
+レコードはIngress ControllerのELBなど、Service Type:LoadBalancerでデプロイしたELBのアイリアス指定を想定しています。
+クラスタ構築時など設定すべきLBがまだ作成されていない場合、`recods`の中身はコメントアウトしてください。
+
 # Terraform実行
 
 `local_values.tf`および`maint.tf`を修正したらTerraformを実行します。
