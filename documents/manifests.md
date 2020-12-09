@@ -457,9 +457,9 @@ IngressはIngressの動作をコントロールする`Ingress Controller`とK8s�
 EKSの場合、`NGINX Ingress Controller`か`AWS Load Balancer Controller`のいずれかが良いでしょう。
 本手順ではこの2つの導入方法について解説します。
 
-[NGINX Ingress Controller](https://kubernetes.io/ja/docs/concepts/services-networking/ingress-controllers/)は古くからあるIngress ControllerでAWS以外のクラウドでも同じように使うことのできるコントローラです。K8s内にControllerのPodとService type:LBでAWSにELBをデプロイし連携させることで動作します。`複数のIngressで一つのELBを集約できる`のがメリットです。
+[NGINX Ingress Controller](https://kubernetes.io/ja/docs/concepts/services-networking/ingress-controllers/)は古くからあるIngress ControllerでAWS以外のクラウドでも同じように使うことのできるコントローラです。K8s内にControllerのPodとService type:LBでAWSにELBをデプロイし連携させることで動作します。`AWS Load Balancer Controller`よりも歴史が古いため、世の中のナレッジも豊富です。
 
-[AWS Load Balancer Controller](https://github.com/kubernetes-sigs/aws-load-balancer-controller)はAWSのALBを使用したIngress Controllerです。以前は`ALB Ingress Controller`と呼ばれていましたが変わりました。K8s内にControllerのPodをデプロイします。`IngressごとにLBを作成するため集約できません。`
+[AWS Load Balancer Controller](https://github.com/kubernetes-sigs/aws-load-balancer-controller)はAWSのALBを使用したIngress Controllerです。以前は`ALB Ingress Controller`と呼ばれていましたが2020年10月に後継となる`AWS Load Balancer Controller`がリリースされました。K8s内にControllerのPodをデプロイします。FargateのPodにもルーティングできます。
 
 Ingressの前にAWSのRoute53にテスト用のプライベートホストゾーンとレコードを作成します。
 サンプルのTerraformではRoute53関連のモジュールを用意しており、`eks-test`という名前のVPCローカルなホストゾーンを作成しています。
@@ -668,6 +668,12 @@ kubectl delete -f deploy.yaml
 ```
 
 ## AWS Load Balancer Controllerを使用する場合
+
+https://kubernetes-sigs.github.io/aws-load-balancer-controller/latest/deploy/installation/
+
+terraformでAWS Load Balacner Controller用のIAMロールを作成する。
+
+IAM for SAでIAMロールをK8sのServiceAccountに紐付ける準備をする。
 
 # IAM Role for SAによるPodへのIAMロール付与
 

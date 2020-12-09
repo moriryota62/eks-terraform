@@ -71,14 +71,16 @@ locals {
   node_min_size      = 1
   node_key_pair      = "mori"
 
-  # fargate
+  ## fargate
   fargate_namespace_name = "default"
   fargate_labels         = { "worker" = "fargate" }
 
-  # IAM for SA
-  iamsa_k8s_namespace     = "default"
-  iamsa_k8s_sa            = "iam-test"
-  iamsa_attach_policy_arn = "arn:aws:iam::aws:policy/CloudWatchLogsFullAccess"
+  ## IAM for SA
+  ### 複数種類のIAMロールを紐付けたい場合、以下ブロックをコピペして変数名を変えてください。
+  ### 以下はIngress Controllerの1つであるLoad Balancer Controllerを使用する場合の定義例です。
+//  iamsa_k8s_namespace     = "kube-system"
+//  iamsa_k8s_sa            = "aws-load-balancer-controller"
+//  iamsa_attach_policy_arn = "arn:aws:iam::456247443832:role/PJ-ENV-LbControllerRole"
 
   # Route53
   zone_name = "eks-test"
