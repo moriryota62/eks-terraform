@@ -459,7 +459,7 @@ EKSの場合、`NGINX Ingress Controller`か`AWS Load Balancer Controller`のい
 
 [NGINX Ingress Controller](https://kubernetes.io/ja/docs/concepts/services-networking/ingress-controllers/)は古くからあるIngress ControllerでAWS以外のクラウドでも同じように使うことのできるコントローラです。K8s内にControllerのPodとService type:LBでAWSにELBをデプロイし連携させることで動作します。`AWS Load Balancer Controller`よりも歴史が古いため、世の中のナレッジも豊富です。
 
-[AWS Load Balancer Controller](https://github.com/kubernetes-sigs/aws-load-balancer-controller)はAWSのALBを使用したIngress Controllerです。以前は`ALB Ingress Controller`と呼ばれていましたが2020年10月に後継となる`AWS Load Balancer Controller`がリリースされました。K8s内にControllerのPodをデプロイします。FargateのPodにもルーティングできます。
+[AWS Load Balancer Controller](https://github.com/kubernetes-sigs/aws-load-balancer-controller)はAWSのALBを使用したIngress Controllerです。以前は`ALB Ingress Controller`と呼ばれていましたが2020年10月に後継となる`AWS Load Balancer Controller`がリリースされました。K8s内にControllerのPodをデプロイします。FargateのPodにもルーティングできます。ELBはK8sのServiceとして管理するのではなく、`AWS Load Balancer Controller`が管理します。利用者はIngressリソースをデプロイする際にIngressGroupを指定します。
 
 Ingressの前にAWSのRoute53にテスト用のプライベートホストゾーンとレコードを作成します。
 サンプルのTerraformではRoute53関連のモジュールを用意しており、`eks-test`という名前のVPCローカルなホストゾーンを作成しています。
@@ -669,11 +669,121 @@ kubectl delete -f deploy.yaml
 
 ## AWS Load Balancer Controllerを使用する場合
 
-https://kubernetes-sigs.github.io/aws-load-balancer-controller/latest/deploy/installation/
+[AWS Load Balancer Controller](https://kubernetes-sigs.github.io/aws-load-balancer-controller/latest/)をデプロイします。
+AWS Load Balancer Controller(以下、LB Controller)はコントローラとなるPodをK8s内にデプロイします。
+そのコントローラPodがK8s内のIngressリソースを監視し、Ingressリソースが作成されるとELBのリスナーなどを作成します。
+そのため、このコントローラPodからAWSのELBを操作するIAMの権限が必要となります。
+本レポジトリのterraformではLB Controllerが必要とするIAMポリシーをIAM for SAでK8s内にあるServiceAccountと紐付けるサンプルを用意しています。また、以下デプロイ手順は次の[AWSドキュメント](https://docs.aws.amazon.com/ja_jp/eks/latest/userguide/alb-ingress.html)をベースに作成しています。
 
-terraformでAWS Load Balacner Controller用のIAMロールを作成する。
+IAM for SAで紐付けるIAMロールの存在を確認します。もし、本レポジトリのterraform以外でIAMロールを作成している場合は、自身の環境にあわせてロール名を修正してください。
 
-IAM for SAでIAMロールをK8sのServiceAccountに紐付ける準備をする。
+``` sh
+aws iam get-role --role-name=$PJ-$ENV-SAIAM-kube-system-aws-load-balancer-controller
+```
+
+以下のようにIAMロールが表示されればIAMロールが作成されています。
+
+``` json
+{
+    "Role": {
+        "Path": "/",
+        "RoleName": "PJ-ENV-SAIAM-kube-system-aws-load-balancer-controller",
+```
+
+LB Controllerが使用するカスタムリソース`TargetGroupBinding`を以下コマンドでデプロイします。
+
+``` sh
+kubectl apply -k "github.com/aws/eks-charts/stable/aws-load-balancer-controller//crds?ref=master"
+```
+
+以下コマンドで確認します。見慣れないリソースですが、これはLB Controller用に作成したカスタムリソースです。
+
+``` sh
+kubectl get targetgroupbindings
+```
+
+以下のように出力されれば問題ないです。カスタムリソースがちゃんと作成できていない場合は`error: the server doesn't have a resource type "targetgroupbindings"`と表示されます。
+
+```
+No resources found in default namespace.
+```
+
+[helm](https://helm.sh/ja/)を使用してLB Controllerをデプロイします。
+helm自体はbrew等のパッケージマネージャでインストール可能です。
+helmのインストールについて詳しくは[こちら](https://helm.sh/docs/intro/install/)のドキュメントを参照ください。
+以下コマンドでデプロイします。
+
+``` sh
+helm upgrade -i aws-load-balancer-controller eks/aws-load-balancer-controller \
+  --set clusterName=$PJ-$ENV \
+  --set serviceAccount.create=yes \
+  --set serviceAccount.name=aws-load-balancer-controller \
+  -n kube-system
+```
+
+以下コマンドで作成確認します。
+
+``` sh
+kubectl get pod -n kube-system
+```
+
+以下のように`aws-load-balancer-controller-XXXXX`のPodがRunningになっていれば良いです。
+
+```
+NAME                                            READY   STATUS    RESTARTS   AGE
+aws-load-balancer-controller-864c98f8f5-kx7rw   1/1     Running   0          26s
+```
+
+しかし、このままではまだPod(ServiceAccount)にIAMロールが付与されていません。
+以下のコマンドでServiceAccount:`aws-load-balancer-controller`を編集します。
+
+``` sh
+kubectl edit sa -n kube-system aws-load-balancer-controller
+```
+
+以下のように、metadata.annotationsに`eks.amazonaws.com/role-arn: <IAMロールARN>`を設定してください。
+以下は編集例です。アカウントIDとPJ-ENVは自身の環境に合わせてください。
+なお、kubectl editの操作はviエディタと同じです。
+
+```
+metadata:
+  annotations:
+    eks.amazonaws.com/role-arn: arn:aws:iam::456247443832:role/PJ-ENV-SAIAM-kube-system-aws-load-balancer-controller
+```
+
+上記設定したら一度Podを再作成します。
+Pod名はさきほど確認したLB Controller Podの名前に置き換えてください。
+
+``` sh
+kubectl delete pod -n kube-system <aws-load-balancer-controller-XXXXX>
+```
+
+セルフ・ヒーリングによりPodが再作成されRunningしていることを確認します。
+
+``` sh
+kubectl get pod -n kube-system
+```
+
+表示例
+
+```
+NAME                                            READY   STATUS    RESTARTS   AGE
+aws-load-balancer-controller-864c98f8f5-vscn8   1/1     Running   0          27s
+```
+
+
+``` sh
+cd $DIR/manifests/alb-ingress/test
+```
+
+``` sh
+kubectl apply -f ./
+```
+
+
+``` sh
+curl -HHost:test-1.k8s.practice http://<nginx ingress用LBのDNS名>
+```
 
 # IAM Role for SAによるPodへのIAMロール付与
 

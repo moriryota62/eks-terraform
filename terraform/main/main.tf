@@ -141,20 +141,20 @@ module "fargate" {
 # 複数のServiceAccountに対して紐付けを行う場合、以下モジュールブロックをコピペしてモジュール名や変数名を変えてください。
 # とくに紐付けを行わない場合はこのモジュール部分をコメントアウトしてください。
 # IAMロールに付けるIAMポリシーはあらかじめ作成しておいてください。
-//module "iam-for-sa" {
-//  source = "../modules/eks-iam-for-sa"
-//
-//  # common parameter
-//  tags      = local.tags
-//  base_name = local.base_name
-//
-//  # module parameter
-//  openid_connect_provider_url = module.eks.openid_connect_provider_url
-//  openid_connect_provider_arn = module.eks.openid_connect_provider_arn
-//  k8s_namespace               = local.iamsa_k8s_namespace
-//  k8s_sa                      = local.iamsa_k8s_sa
-//  attach_policy_arn           = local.iamsa_attach_policy_arn
-//}
+module "iam-for-sa" {
+  source = "../modules/eks-iam-for-sa"
+
+  # common parameter
+  tags      = local.tags
+  base_name = local.base_name
+
+  # module parameter
+  openid_connect_provider_url = module.eks.openid_connect_provider_url
+  openid_connect_provider_arn = module.eks.openid_connect_provider_arn
+  k8s_namespace               = local.iamsa_k8s_namespace
+  k8s_sa                      = local.iamsa_k8s_sa
+  attach_policy_arn           = local.iamsa_attach_policy_arn
+}
 
 module "route53" {
   source = "../modules/route53"

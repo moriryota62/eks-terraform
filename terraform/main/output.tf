@@ -13,3 +13,7 @@ output "access_points" {
 output "network" {
   value = module.network
 }
+
+output "iam_role" {
+  value = module.iam-for-sa
+}

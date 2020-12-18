@@ -1,0 +1,39 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: alb-ingress-2
+  name: alb-ingress-2
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: alb-ingress-2
+  template:
+    metadata:
+      labels:
+        app: alb-ingress-2
+    spec:
+      containers:
+      - image: nginx
+        name: nginx
+        volumeMounts:
+        - name: index
+          # mountPath: /test
+          mountPath: /test/alb-ingress-2
+        - name: config
+          mountPath: /etc/nginx/conf.d
+      initContainers:
+      - image: nginx
+        name: init-nginx
+        # command: ["/bin/sh","-c","echo alb-ingress-2 > /tmp/alb-ingress-2.html"]
+        command: ["/bin/sh","-c","echo alb-ingress-2 nanodayo > /tmp/index.html"]
+        volumeMounts:
+        - name: index
+          mountPath: /tmp
+      volumes:
+      - name: index
+        emptyDir: {}
+      - name: config
+        configMap: 
+          name: alb-config-2

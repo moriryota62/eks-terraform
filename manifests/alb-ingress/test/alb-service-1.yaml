@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: alb-ingress-1
+  name: alb-ingress-1
+spec:
+  ports:
+  - port: 80
+    protocol: TCP
+    targetPort: 80
+  type: NodePort
+  selector:
+    app: alb-ingress-1
