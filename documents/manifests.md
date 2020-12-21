@@ -461,9 +461,10 @@ EKSの場合、`NGINX Ingress Controller`か`AWS Load Balancer Controller`のい
 
 [AWS Load Balancer Controller](https://github.com/kubernetes-sigs/aws-load-balancer-controller)はAWSのALBを使用したIngress Controllerです。以前は`ALB Ingress Controller`と呼ばれていましたが2020年10月に後継となる`AWS Load Balancer Controller`がリリースされました。K8s内にControllerのPodをデプロイします。FargateのPodにもルーティングできます。ELBはK8sのServiceとして管理するのではなく、`AWS Load Balancer Controller`が管理します。利用者はIngressリソースをデプロイする際にIngressGroupを指定します。
 
-Ingressの前にAWSのRoute53にテスト用のプライベートホストゾーンとレコードを作成します。
-サンプルのTerraformではRoute53関連のモジュールを用意しており、`eks-test`という名前のVPCローカルなホストゾーンを作成しています。
-続いてワイルドカードレコードを追加しますが、この手順はIngress Controller作成後に行います。
+なお、サンプルのTerraformではRoute53関連のモジュールを用意しています。
+もし特定のドメイン名でアクセスしたい場合はご活用ください。
+サンプルでは`eks-test`という名前のVPCローカルなホストゾーンを作成しています。
+続いてワイルドカードレコードを追加が、必要ですがレコード指定にIngress ControllerでデプロイされるLBのエイリアスを指定するため、Ingress Controllerデプロイ後に作成してください。
 
 ## NGINX Ingressを使用する場合
 

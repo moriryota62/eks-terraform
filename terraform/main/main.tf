@@ -19,24 +19,24 @@ module "network" {
 # 最新のAmazonLinuxのAMIを使用し、指定したインスタンスタイプ、ディスクサイズでEC2インスタンスを作成します。
 # 任意のCIDRからのSSHできるように設定できます。
 # 起動/停止の自動スケジュールを任意に設定可能です。
-module "bastion" {
-  source = "../modules/bastion-server"
-
-  # common parameter
-  tags      = local.tags
-  base_name = local.base_name
-
-  # module parameter
-  vpc_id                     = module.network.vpc_id
-  ec2_instance_type          = local.bastion_ec2_instance_type
-  ec2_subnet_id              = module.network.public_subnet_ids[0]
-  ec2_root_block_volume_size = local.bastion_ec2_root_block_volume_size
-  ec2_key_name               = local.bastion_ec2_key_name
-  sg_allow_access_cidrs      = local.bastion_sg_allow_access_cidrs
-  cloudwatch_enable_schedule = local.bastion_cloudwatch_enable_schedule
-  cloudwatch_start_schedule  = local.bastion_cloudwatch_start_schedule
-  cloudwatch_stop_schedule   = local.bastion_cloudwatch_stop_schedule
-}
+#module "bastion" {
+#  source = "../modules/bastion-server"
+#
+#  # common parameter
+#  tags      = local.tags
+#  base_name = local.base_name
+#
+#  # module parameter
+#  vpc_id                     = module.network.vpc_id
+#  ec2_instance_type          = local.bastion_ec2_instance_type
+#  ec2_subnet_id              = module.network.public_subnet_ids[0]
+#  ec2_root_block_volume_size = local.bastion_ec2_root_block_volume_size
+#  ec2_key_name               = local.bastion_ec2_key_name
+#  sg_allow_access_cidrs      = local.bastion_sg_allow_access_cidrs
+#  cloudwatch_enable_schedule = local.bastion_cloudwatch_enable_schedule
+#  cloudwatch_start_schedule  = local.bastion_cloudwatch_start_schedule
+#  cloudwatch_stop_schedule   = local.bastion_cloudwatch_stop_schedule
+#}
 
 # EKS内のSecretリソースやEFSの暗号化に使用するCMKを作成するモジュールです。
 # 既存のCMKを使用する場合はこのモジュールをコメントアウトしてください。
@@ -51,23 +51,23 @@ module "kms" {
 
 # EFSを作成するモジュールです。
 # EFSを使用しない場合や既存のEFSを使用する場合はこのモジュールをコメントアウトしてください。
-module "efs" {
-  source = "../modules/efs"
-
-  # common parameter
-  tags      = local.tags
-  base_name = local.base_name
-
-  # module parameter
-  kms_id             = module.kms.kms_arn
-  private_subnet_ids = module.network.private_subnet_ids
-  vpc_id             = module.network.vpc_id
-  vpc_cidr           = module.network.vpc_cidr
-
-  access_points = local.efs_access_points
-
-  depends_on = [module.network]
-}
+#module "efs" {
+#  source = "../modules/efs"
+#
+#  # common parameter
+#  tags      = local.tags
+#  base_name = local.base_name
+#
+#  # module parameter
+#  kms_id             = module.kms.kms_arn
+#  private_subnet_ids = module.network.private_subnet_ids
+#  vpc_id             = module.network.vpc_id
+#  vpc_cidr           = module.network.vpc_cidr
+#
+#  access_points = local.efs_access_points
+#
+#  depends_on = [module.network]
+#}
 
 # EKSを作成するモジュールです。
 # マスターコンポーネントのログはすべて有効に設定します。
@@ -114,7 +114,8 @@ module "worker-node" {
   max_size                 = local.node_max_size
   min_size                 = local.node_min_size
   key_pair                 = local.node_key_pair
-  allow_security_group_ids = [module.bastion.bastion_sg_id]
+#   allow_security_group_ids = [module.bastion.bastion_sg_id]
+  allow_security_group_ids = []
 }
 
 # Fargateプロファイルを作成するモジュールです。
