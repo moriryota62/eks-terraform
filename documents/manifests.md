@@ -671,10 +671,10 @@ kubectl delete -f deploy.yaml
 ## AWS Load Balancer Controllerを使用する場合
 
 [AWS Load Balancer Controller](https://kubernetes-sigs.github.io/aws-load-balancer-controller/latest/)をデプロイします。
-AWS Load Balancer Controller(以下、LB Controller)はコントローラとなるPodをK8s内にデプロイします。
+AWS Load Balancer Controller(以下、ALB Controller)はコントローラとなるPodをK8s内にデプロイします。
 そのコントローラPodがK8s内のIngressリソースを監視し、Ingressリソースが作成されるとELBのリスナーなどを作成します。
 そのため、このコントローラPodからAWSのELBを操作するIAMの権限が必要となります。
-本レポジトリのterraformではLB Controllerが必要とするIAMポリシーをIAM for SAでK8s内にあるServiceAccountと紐付けるサンプルを用意しています。また、以下デプロイ手順は次の[AWSドキュメント](https://docs.aws.amazon.com/ja_jp/eks/latest/userguide/alb-ingress.html)をベースに作成しています。
+本レポジトリのterraformではALB Controllerが必要とするIAMポリシーをIAM for SAでK8s内にあるServiceAccountと紐付けるサンプルを用意しています。また、以下デプロイ手順は次の[AWSドキュメント](https://docs.aws.amazon.com/ja_jp/eks/latest/userguide/alb-ingress.html)をベースに作成しています。
 
 IAM for SAで紐付けるIAMロールの存在を確認します。もし、本レポジトリのterraform以外でIAMロールを作成している場合は、自身の環境にあわせてロール名を修正してください。
 
@@ -689,15 +689,16 @@ aws iam get-role --role-name=$PJ-$ENV-SAIAM-kube-system-aws-load-balancer-contro
     "Role": {
         "Path": "/",
         "RoleName": "PJ-ENV-SAIAM-kube-system-aws-load-balancer-controller",
+~略~
 ```
 
-LB Controllerが使用するカスタムリソース`TargetGroupBinding`を以下コマンドでデプロイします。
+ALB Controllerが使用するカスタムリソース`TargetGroupBinding`を以下コマンドでデプロイします。
 
 ``` sh
 kubectl apply -k "github.com/aws/eks-charts/stable/aws-load-balancer-controller//crds?ref=master"
 ```
 
-以下コマンドで確認します。見慣れないリソースですが、これはLB Controller用に作成したカスタムリソースです。
+以下コマンドで確認します。見慣れないリソースですが、これはALB Controller用に作成したカスタムリソースです。
 
 ``` sh
 kubectl get targetgroupbindings
@@ -709,10 +710,12 @@ kubectl get targetgroupbindings
 No resources found in default namespace.
 ```
 
-[helm](https://helm.sh/ja/)を使用してLB Controllerをデプロイします。
+[helm](https://helm.sh/ja/)を使用してALB Controllerをデプロイします。
 helm自体はbrew等のパッケージマネージャでインストール可能です。
 helmのインストールについて詳しくは[こちら](https://helm.sh/docs/intro/install/)のドキュメントを参照ください。
 以下コマンドでデプロイします。
+以下コマンドではNamespace:kube-systemにデプロイします。
+また、ServiceAccount:aws-load-balancer-controllerも同時に作成します。
 
 ``` sh
 helm upgrade -i aws-load-balancer-controller eks/aws-load-balancer-controller \
@@ -744,7 +747,9 @@ kubectl edit sa -n kube-system aws-load-balancer-controller
 
 以下のように、metadata.annotationsに`eks.amazonaws.com/role-arn: <IAMロールARN>`を設定してください。
 以下は編集例です。アカウントIDとPJ-ENVは自身の環境に合わせてください。
-なお、kubectl editの操作はviエディタと同じです。
+kubectl editの操作はviエディタと同じです。
+なお、この手順ではeditで直接マニフェストを書き換えていますが、本来ならIaCとしてマニフェストに残すべきです。
+すでにデプロイ済のリソースをマニフェストに出力するには`kubectl get <リソース種別> <リソース名> -o yaml`でマニフェストを出力し、ファイルに保存すると良いでしょう。
 
 ```
 metadata:
@@ -753,7 +758,7 @@ metadata:
 ```
 
 上記設定したら一度Podを再作成します。
-Pod名はさきほど確認したLB Controller Podの名前に置き換えてください。
+Pod名はさきほど確認したALB Controller Podの名前に置き換えてください。
 
 ``` sh
 kubectl delete pod -n kube-system <aws-load-balancer-controller-XXXXX>
@@ -772,18 +777,64 @@ NAME                                            READY   STATUS    RESTARTS   AGE
 aws-load-balancer-controller-864c98f8f5-vscn8   1/1     Running   0          27s
 ```
 
+以上でALB Controllerのデプロイは完了です。
+
+続いて、ALB COntrollerの動作を確認するため、Ingressリソースと簡単なNginxのWebサーバーをデプロイしてみます。
+まずは動作確認用のサンプルマニフェストを配置しているディレクトリに移動します。
 
 ``` sh
 cd $DIR/manifests/alb-ingress/test
 ```
 
+配置してあるマニフェスト一式をデプロイします。
+簡単にマニフェストを解説すると以下の通りです。
+
+- Nginxを動かす`alb-ingress-1`および`2`のDeployment
+  - 各Podは`localhost/alb-ingress-1/test/`(2の場合はingress-2)にアクセスすると固有のメッセージを返す
+- 上記Deploymentは`alb-ingress-1`および`2`のServiceで待ち受けている
+- 外部へ公開するための`alb-ingress-1`および`2`のIngress
+  - 各IngressはALB Controllerを使用するannotationsをつけている
+  - ターゲットグループはどちらも`test`(同じターゲットグループだとLBを共有する)
+  - `<LB DNS>/alb-ingress-1`および`2`のアクセスが着た場合、対応する名前のServiceへ流す
+
 ``` sh
 kubectl apply -f ./
 ```
 
+デプロイを確認します。
 
 ``` sh
-curl -HHost:test-1.k8s.practice http://<nginx ingress用LBのDNS名>
+kubectl get pod
+```
+
+以下のように`alb-ingress-1-XXXX`および`alb-ingress-2-XXXX`がRunningになっていればよいです。
+
+```
+NAME                             READY   STATUS    RESTARTS   AGE
+alb-ingress-1-6788f547cc-dzjwb   1/1     Running   0          6m33s
+alb-ingress-2-cc7f48-ffdcz       1/1     Running   0          6m33s
+```
+
+また、Ingressリソースも確認しておきます。
+
+``` sh
+kubectl get ingress
+```
+
+デプロイするとALB Controllerに以下メッセージ
+
+```
+{"level":"error","ts":1608550036.190063,"logger":"controller","msg":"Reconciler error","controller":"ingress","name":"test","namespace":"","error":"couldn't auto-discover subnets: unable to discover at least one subnet"}
+```
+
+以下同様の事象で困っているissue発見
+https://github.com/kubernetes-sigs/aws-load-balancer-controller/issues/1693
+
+
+``` sh
+kubectl delete -f ./
+helm uninstall aws-load-balancer-controller -n kube-system
+kubectl delete -k "github.com/aws/eks-charts/stable/aws-load-balancer-controller//crds?ref=master"
 ```
 
 # IAM Role for SAによるPodへのIAMロール付与
