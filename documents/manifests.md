@@ -754,7 +754,7 @@ kubectl editの操作はviエディタと同じです。
 ```
 metadata:
   annotations:
-    eks.amazonaws.com/role-arn: arn:aws:iam::456247443832:role/PJ-ENV-SAIAM-kube-system-aws-load-balancer-controller
+    eks.amazonaws.com/role-arn: arn:aws:iam::456247443832:role/pj-env-SAIAM-kube-system-aws-load-balancer-controller
 ```
 
 上記設定したら一度Podを再作成します。
@@ -821,18 +821,32 @@ alb-ingress-2-cc7f48-ffdcz       1/1     Running   0          6m33s
 kubectl get ingress
 ```
 
-デプロイするとALB Controllerに以下メッセージ
+以下のようにIngressリソースが作成され、ADDRESSにALBのパブリックDNS名が表示されていれば良いです。
+今回のサンプルでは同じターゲットグループを指定しているためADDRESSも同じになっています。
 
 ```
-{"level":"error","ts":1608550036.190063,"logger":"controller","msg":"Reconciler error","controller":"ingress","name":"test","namespace":"","error":"couldn't auto-discover subnets: unable to discover at least one subnet"}
+NAME            CLASS    HOSTS   ADDRESS                                                      PORTS   AGE
+alb-ingress-1   <none>   *       k8s-test-83a2f4c943-1229419113.us-east-2.elb.amazonaws.com   80      20s
+alb-ingress-2   <none>   *       k8s-test-83a2f4c943-1229419113.us-east-2.elb.amazonaws.com   80      20s
 ```
 
-以下同様の事象で困っているissue発見
-https://github.com/kubernetes-sigs/aws-load-balancer-controller/issues/1693
+作業端末のWebブラウザ等で以下のアドレスにアクセスします。
+ALB Controllerを経由し、パスに応じて適切なPodへ接続できることを確認します。
 
+- http://k8s-test-83a2f4c943-1229419113.us-east-2.elb.amazonaws.com/alb-ingress-1/
+- http://k8s-test-83a2f4c943-1229419113.us-east-2.elb.amazonaws.com/alb-ingress-2/
+
+以上で動作の確認は完了です。
+テスト用のリソースは以下コマンドで削除します。
 
 ``` sh
+cd $DIR/manifests/alb-ingress/test
 kubectl delete -f ./
+```
+
+ALB Controllerも不要な場合は以下コマンドで削除します。
+
+``` sh
 helm uninstall aws-load-balancer-controller -n kube-system
 kubectl delete -k "github.com/aws/eks-charts/stable/aws-load-balancer-controller//crds?ref=master"
 ```
