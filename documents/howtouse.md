@@ -232,7 +232,7 @@ EKSに接続するためkubeconfigを設定します。
 
 ``` sh
 aws eks --region $REGION update-kubeconfig --name $PJ-$ENV --kubeconfig ~/.kube/config_$PJ-$ENV
-aws eks --region us-east-2 update-kubeconfig --name PJ-ENV --kubeconfig ~/.kube/config_PJ-ENV
+aws eks --region us-east-2 update-kubeconfig --name pj-env --kubeconfig ~/.kube/config_pj-env
 ```
 
 その後、使用するkubeconfigを以下の環境変数で設定します。

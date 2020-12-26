@@ -10,12 +10,12 @@ provider "aws" {
 # parameter settings
 locals {
   # common parameter
-  pj        = "PJ"
-  env       = "ENV"
+  pj        = "pj"
+  env       = "env"
   base_name = "${local.pj}-${local.env}"
   tags = {
-    pj    = "PJ"
-    env   = "ENV"
+    pj    = "pj"
+    env   = "env"
     owner = "OWNER"
   }
 
@@ -26,32 +26,32 @@ locals {
   network_subnet_private_cidrs = ["10.1.20.0/24", "10.1.21.0/24"]
 
   ## bastion
-  bastion_ec2_instance_type          = "t2.medium"
-  bastion_ec2_root_block_volume_size = 30
-  bastion_ec2_key_name               = "mori"
-  bastion_sg_allow_access_cidrs      = ["210.20.194.5/32"]
-  bastion_cloudwatch_enable_schedule = true
-  bastion_cloudwatch_start_schedule  = "cron(0 0 ? * MON-FRI *)"
-  bastion_cloudwatch_stop_schedule   = "cron(0 10 ? * MON-FRI *)"
+#  bastion_ec2_instance_type          = "t2.medium"
+#  bastion_ec2_root_block_volume_size = 30
+#  bastion_ec2_key_name               = "mori"
+#  bastion_sg_allow_access_cidrs      = ["210.20.194.5/32"]
+#  bastion_cloudwatch_enable_schedule = true
+#  bastion_cloudwatch_start_schedule  = "cron(0 0 ? * MON-FRI *)"
+#  bastion_cloudwatch_stop_schedule   = "cron(0 10 ? * MON-FRI *)"
 
   ## efs
   ### 以下はEFSに/test1と/test2のアクセスポイントを作成する記述例です。
   ### EFS CSI Driverを使用してEKSからEFSを使用する場合はアクセスポイントを用途ごとに作成します。
   ### EFS provisionerを使用してEKSからEFSを使用する場合は`efs_access_points = {}`としてください。
-  efs_access_points = {
-    "/test1" = {
-      path        = "/test1",
-      owner_gid   = 0,
-      owner_uid   = 0,
-      permissions = "0777"
-    },
-    "/test2" = {
-      path        = "/test2",
-      owner_gid   = 0,
-      owner_uid   = 0,
-      permissions = "0777"
-    }
-  }
+#  efs_access_points = {
+#    "/test1" = {
+#      path        = "/test1",
+#      owner_gid   = 0,
+#      owner_uid   = 0,
+#      permissions = "0777"
+#    },
+#    "/test2" = {
+#      path        = "/test2",
+#      owner_gid   = 0,
+#      owner_uid   = 0,
+#      permissions = "0777"
+#    }
+#  }
 
   ## eks
   eks_version                 = "1.18"
