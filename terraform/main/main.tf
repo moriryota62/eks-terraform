@@ -138,6 +138,37 @@ module "fargate" {
   labels               = local.fargate_labels
 }
 
+# ALB Controller用のIAMポリシーを作成するモジュールです。
+# Ingress ControllerとしてALB Controllerを使用する場合に使います。
+# ALB Controllerを使用しない場合、このIAMポリシーは不要です。
+module "alb-aim" {
+  source = "../modules/alb-iam"
+
+  # common parameter
+  tags      = local.tags
+  base_name = local.base_name
+}
+
+# ALB Controller用のIAMロール for ServiceAccountを作成するモジュールです。
+# Ingress ControllerとしてALB Controllerを使用する場合に使います。
+# ALB Controllerを使用しない場合、このIAMポリシーは不要です。
+# ALB ControllerのデプロイNamespaceはkube-system、ServiceAccountはaws-load-balancer-controllerの前提です。
+# もし別のNamespace、ServiceAccountでデプロイする場合は以下ハードコードしている部分を修正してください。
+module "alb-iam-for-sa" {
+  source = "../modules/eks-iam-for-sa"
+
+  # common parameter
+  tags      = local.tags
+  base_name = local.base_name
+
+  # module parameter
+  openid_connect_provider_url = module.eks.openid_connect_provider_url
+  openid_connect_provider_arn = module.eks.openid_connect_provider_arn
+  k8s_namespace               = "kube-system"
+  k8s_sa                      = "aws-load-balancer-controller"
+  attach_policy_arn           = module.alb-aim.policy_arn
+}
+
 # K8sのServiceAccountにIAMロールを紐付けるモジュールです。
 # 複数のServiceAccountに対して紐付けを行う場合、以下モジュールブロックをコピペしてモジュール名や変数名を変えてください。
 # とくに紐付けを行わない場合はこのモジュール部分をコメントアウトしてください。

@@ -14,6 +14,10 @@ output "network" {
   value = module.network
 }
 
+output "alb_iam_role" {
+  value = module.alb-iam-for-sa
+}
+
 output "iam_role" {
   value = module.iam-for-sa
 }

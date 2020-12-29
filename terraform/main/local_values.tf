@@ -77,10 +77,9 @@ locals {
 
   ## IAM for SA
   ### 複数種類のIAMロールを紐付けたい場合、以下ブロックをコピペして変数名を変えてください。
-  ### 以下はIngress Controllerの1つであるLoad Balancer Controllerを使用する場合の定義例です。
-  iamsa_k8s_namespace     = "kube-system"
-  iamsa_k8s_sa            = "aws-load-balancer-controller"
-  iamsa_attach_policy_arn = "arn:aws:iam::456247443832:policy/PJ-ENV-LbControllerPolicy"
+  iamsa_k8s_namespace     = "default"
+  iamsa_k8s_sa            = "iam-test"
+  iamsa_attach_policy_arn = "arn:aws:iam::aws:policy/CloudWatchLogsFullAccess"
 
   # Route53
   zone_name = "eks-test"
