@@ -3,30 +3,38 @@ kind: Deployment
 metadata:
   labels:
     app: nic-ingress-2
+    worker: fargate
   name: nic-ingress-2
 spec:
   replicas: 1
   selector:
     matchLabels:
       app: nic-ingress-2
+      worker: fargate
   template:
     metadata:
       labels:
         app: nic-ingress-2
+        worker: fargate
     spec:
       containers:
       - image: nginx
         name: nginx
         volumeMounts:
         - name: index
-          mountPath: /usr/share/nginx/html
+          mountPath: /test/nic-ingress-2
+        - name: config
+          mountPath: /etc/nginx/conf.d
       initContainers:
       - image: nginx
         name: init-nginx
-        command: ["/bin/sh","-c","echo nic-ingress-2 > /tmp/index.html"]
+        command: ["/bin/sh","-c","echo nic-ingress-2 dayodayo > /tmp/index.html"]
         volumeMounts:
         - name: index
           mountPath: /tmp
       volumes:
       - name: index
         emptyDir: {}
+      - name: config
+        configMap: 
+          name: nic-config-2

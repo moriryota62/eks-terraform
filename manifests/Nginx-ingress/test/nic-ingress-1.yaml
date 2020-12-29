@@ -2,14 +2,11 @@ apiVersion: networking.k8s.io/v1beta1
 kind: Ingress
 metadata:
   name: nic-ingress-1
-  annotations:
-    nginx.ingress.kubernetes.io/rewrite-target: /
 spec:
   rules:
-  - host: nic-ingress-1.eks-test
-    http:
+  - http:
       paths:
-      - path: /
+      - path: /nic-ingress-1/
         backend:
           serviceName: nic-ingress-1
           servicePort: 80
