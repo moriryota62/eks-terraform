@@ -3,4 +3,4 @@ kind: ServiceAccount
 metadata:
   name: iam-test
   annotations:
-    eks.amazonaws.com/role-arn: arn:aws:iam::456247443832:role/PJ-ENV-SAIAM-default-iam-test
+    eks.amazonaws.com/role-arn: arn:aws:iam::456247443832:role/pj-env-SAIAM-default-iam-test
