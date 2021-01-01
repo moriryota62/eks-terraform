@@ -67,7 +67,7 @@ locals {
   node_instance_type = "t3.medium"
   node_node_role     = "worker"
   node_desired_size  = 1
-  node_max_size      = 1
+  node_max_size      = 3
   node_min_size      = 1
   node_key_pair      = "mori"
 

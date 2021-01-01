@@ -1,0 +1,23 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  creationTimestamp: null
+  labels:
+    app: ca-test
+  name: ca-test
+spec:
+  replicas: 4
+  selector:
+    matchLabels:
+      app: ca-test
+  template:
+    metadata:
+      labels:
+        app: ca-test
+    spec:
+      containers:
+      - image: nginx
+        name: nginx
+        resources:
+          requests:
+            cpu: 1
