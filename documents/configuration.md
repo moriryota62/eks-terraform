@@ -11,7 +11,7 @@
 本レポジトリのTerraformで作成するEKS構成について説明します。
 全体像は以下の通りです。
 
-![全体像](./over-view.png)
+![全体像](./over-view.svg)
 
 ## EKS
 
