@@ -1,5 +1,5 @@
 resource "aws_route_table" "private" {
-  count = length(var.subnet_public_cidrs)
+  count = length(var.subnet_private_cidrs)
 
   vpc_id = aws_vpc.main.id
 
