@@ -45,6 +45,28 @@ export ENV=env
 export OWNER=owner
 ```
 
+以下コマンドで環境変数を置換
+
+**Linuxの場合**
+
+``` sh
+cd $DIR/terraform/
+find ./ -type f -exec grep -l 'REGION' {} \; | xargs sed -i -e 's:REGION:'$REGION':g'
+find ./ -type f -exec grep -l 'PJ' {} \; | xargs sed -i -e 's:PJ:'$PJ':g'
+find ./ -type f -exec grep -l 'ENV' {} \; | xargs sed -i -e 's:ENV:'$ENV':g'
+find ./ -type f -exec grep -l 'OWNER' {} \; | xargs sed -i -e 's:OWNER:'$OWNER':g'
+```
+
+**macの場合**
+
+``` sh
+cd $DIR/terraform/
+find ./ -type f -exec grep -l 'REGION' {} \; | xargs sed -i "" -e 's:REGION:'$REGION':g'
+find ./ -type f -exec grep -l 'PJ' {} \; | xargs sed -i "" -e 's:PJ:'$PJ':g'
+find ./ -type f -exec grep -l 'ENV' {} \; | xargs sed -i "" -e 's:ENV:'$ENV':g'
+find ./ -type f -exec grep -l 'OWNER' {} \; | xargs sed -i "" -e 's:OWNER:'$OWNER':g'
+```
+
 # tfバックエンドの作成
 
 Terraformのtfstateを保存するバックエンドをS3およびDynamoDBを使って構築します。
@@ -55,27 +77,7 @@ Terraformのtfstateを保存するバックエンドをS3およびDynamoDBを使
 cd $DIR/terraform/tf-backend
 ```
 
-`tf-backend.tf`ファイルを編集します。編集が必要な箇所はさきほど環境変数に設定した基本設定値です。以下コマンドで置換できるようにしてあります。
-
-**Linuxの場合**
-
-``` sh
-sed -i -e 's:REGION:'$REGION':g' tf-backend.tf
-sed -i -e 's:PJ:'$PJ':g' tf-backend.tf
-sed -i -e 's:ENV:'$ENV':g' tf-backend.tf
-sed -i -e 's:OWNER:'$OWNER':g' tf-backend.tf
-```
-
-**macの場合**
-
-``` sh
-sed -i "" -e 's:REGION:'$REGION':g' tf-backend.tf
-sed -i "" -e 's:PJ:'$PJ':g' tf-backend.tf
-sed -i "" -e 's:ENV:'$ENV':g' tf-backend.tf
-sed -i "" -e 's:OWNER:'$OWNER':g' tf-backend.tf
-```
-
-上記修正したらTerraformを実行します。
+Terraformを実行します。
 
 ``` sh
 terraform init
@@ -111,18 +113,7 @@ EKSおよび周辺リソースを構築します。まずはmainとなるディ�
 cd $DIR/terraform/main
 ```
 
-まずは`local_values.tf`の基本設定値を置換で設定します。
-
-**macの場合**
-
-``` sh
-sed -i "" -e 's:REGION:'$REGION':g' local_values.tf
-sed -i "" -e 's:PJ:'$PJ':g' local_values.tf
-sed -i "" -e 's:ENV:'$ENV':g' local_values.tf
-sed -i "" -e 's:OWNER:'$OWNER':g' local_values.tf
-```
-
-その後、`local_values.tf`および`maint.tf`を修正します。
+`local_values.tf`および`maint.tf`を修正します。
 `local_values.tf`には作成するリソースの内、値を決める必要のあるパラメータをまとめています。
 `maint.tf`はAWSリソースを作成するモジュールを読み込みます。不要なモジュールがあればブロックごとコメントアウトしてください。
 

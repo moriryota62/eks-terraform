@@ -4,7 +4,7 @@ terraform {
 
 provider "aws" {
   version = ">= 3.5.0"
-  region  = "us-east-2"
+  region  = "REGION"
 }
 
 # parameter settings
