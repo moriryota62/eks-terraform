@@ -9,10 +9,10 @@ terraform {
   }
 
   backend "s3" {
-    bucket         = "pj-env-tfstate"
+    bucket         = "PJ-ENV-tfstate"
     key            = "eks-terraform/terraform.tfstate"
     encrypt        = true
     dynamodb_table = "PJ-ENV-tfstate-lock"
-    region         = "us-east-2"
+    region         = "REGION"
   }
 }

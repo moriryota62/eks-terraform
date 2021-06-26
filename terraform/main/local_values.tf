@@ -4,18 +4,18 @@ terraform {
 
 provider "aws" {
   version = ">= 3.5.0"
-  region  = "us-east-2"
+  region  = "REGION"
 }
 
 # parameter settings
 locals {
   # common parameter
-  pj        = "pj"
-  env       = "env"
+  pj        = "PJ"
+  env       = "ENV"
   base_name = "${local.pj}-${local.env}"
   tags = {
-    pj    = "pj"
-    env   = "env"
+    pj    = "PJ"
+    env   = "ENV"
     owner = "OWNER"
   }
 
