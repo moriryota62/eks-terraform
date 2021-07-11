@@ -71,33 +71,22 @@ resource "aws_iam_instance_profile" "bastion" {
 }
 
 # 自動スケジュール設定
-# SSM Automation用のIAM Role
-data "aws_iam_policy_document" "bastion_ssm_automation_trust" {
-  statement {
-    actions = ["sts:AssumeRole"]
-
-    principals {
-      type        = "Service"
-      identifiers = ["ssm.amazonaws.com"]
-    }
-  }
-}
-
+## CloudWatch Eventsで使用するIAMロール
 resource "aws_iam_role" "bastion_ssm_automation" {
   count = var.cloudwatch_enable_schedule ? 1 : 0
 
-  name               = "${var.base_name}-Bastioin-SSMautomation"
+  name               = "${var.base_name}-Bastion-SSMautomationRole"
   assume_role_policy = data.aws_iam_policy_document.bastion_ssm_automation_trust.json
 
   tags = merge(
     {
-      "Name" = "${var.base_name}-Bastioin-SSMautomation"
+      "Name" = "${var.base_name}-Bastion-SSMautomationRole"
     },
     var.tags
   )
 }
 
-# SSM Automation用のIAM RoleにPolicy付与
+## CloudWatch EventsのIAMロールにSSM Automationのポリシーを付与
 resource "aws_iam_role_policy_attachment" "ssm-automation-atach-policy" {
   count = var.cloudwatch_enable_schedule ? 1 : 0
 
@@ -105,8 +94,8 @@ resource "aws_iam_role_policy_attachment" "ssm-automation-atach-policy" {
   policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonSSMAutomationRole"
 }
 
-# CloudWatchイベント用のIAM Role
-data "aws_iam_policy_document" "runner_event_invoke_assume_role" {
+## CloudWatch EventsからのaasumeRoleを許可するポリシー
+data "aws_iam_policy_document" "bastion_ssm_automation_trust" {
   statement {
     actions = ["sts:AssumeRole"]
 
@@ -115,18 +104,4 @@ data "aws_iam_policy_document" "runner_event_invoke_assume_role" {
       identifiers = ["events.amazonaws.com"]
     }
   }
-}
-
-resource "aws_iam_role" "event_invoke_assume_role" {
-  count = var.cloudwatch_enable_schedule ? 1 : 0
-
-  name               = "${var.base_name}-Bastion-CloudWatchEventRole"
-  assume_role_policy = data.aws_iam_policy_document.runner_event_invoke_assume_role.json
-
-  tags = merge(
-    {
-      "Name" = "${var.base_name}-Bastion-CloudWatchEventRole"
-    },
-    var.tags
-  )
 }
