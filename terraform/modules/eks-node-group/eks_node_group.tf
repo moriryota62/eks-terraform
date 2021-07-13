@@ -1,4 +1,4 @@
-resource "aws_eks_node_group" "example" {
+resource "aws_eks_node_group" "this" {
   cluster_name    = var.cluster_name
   node_group_name = "${var.base_name}-${var.node_role}-node-group"
   node_role_arn   = var.nodegroup_iam_arn
