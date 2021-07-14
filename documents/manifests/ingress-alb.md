@@ -161,7 +161,8 @@ alb-ingress-2   <none>   *       k8s-test-83a2f4c943-1229419113.us-east-2.elb.am
 ```
 
 > もしADDRESSが表示されず、Ingressのイベントを確認して以下のメッセージがでる場合、sa-for-iamで付与した`pj-env-SAIAM-kube-system-aws-load-balancer-controller`のIAMポリシーに不備がある可能性があります。
->> couldn't auto-discover subnets: UnauthorizedOperation: You are not authorized to perform this operation
+>> couldn't auto-discover subnets: UnauthorizedOperation: You are not authorized to perform this operation  
+
 > 今のIAMポリシーはコントローラのバージョンがv2.2.1で動作確認しています。このIAMポリシーは以下コマンドでDLしたものです。もし、コントローラのバージョンが違う場合、以下コマンドのバージョン部分を修正し、IAMを再作成してください。
 >> curl -o iam_policy.json https://raw.githubusercontent.com/kubernetes-sigs/aws-load-balancer-controller/v2.2.1/docs/install/iam_policy.json
 
