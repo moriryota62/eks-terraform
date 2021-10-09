@@ -1,0 +1,9 @@
+base_name                = "project-environment"
+disk_size                = 30
+instance_type            = "t3.medium"
+node_role                = "worker"
+desired_size             = 1
+max_size                 = 3
+min_size                 = 1
+key_pair                 = ""
+allow_security_group_ids = []

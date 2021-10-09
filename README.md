@@ -24,7 +24,6 @@ eksctlはAWSも推奨しているツールですが、内部的にはCloudFormat
 
 - [EKS構成について](./documents/configuration.md)
 - [使い方](./documents/setup.md)
-- [各モジュールの説明](./documents/module.md)
 
 ## ツールのインストール方法
 

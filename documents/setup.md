@@ -1,20 +1,7 @@
 - [前提](#前提)
 - [環境変数の設定](#環境変数の設定)
 - [tfバックエンドの作成](#tfバックエンドの作成)
-- [パラメータ設定](#パラメータ設定)
-  - [network](#network)
-  - [bastion](#bastion)
-  - [kms](#kms)
-  - [efs](#efs)
-    - [EFS provisioner を使用する場合](#efs-provisioner-を使用する場合)
-    - [EFS CSI Driver を使用する場合](#efs-csi-driver-を使用する場合)
-  - [eks](#eks)
-  - [node-group](#node-group)
-  - [fargate](#fargate)
-  - [iam-for-sa](#iam-for-sa)
-  - [route53](#route53)
 - [Terraform実行](#terraform実行)
-- [KUBECONFIGの設定](#kubeconfigの設定)
 
 本レポジトリのTerraformコードを利用する方法を説明します。
 
@@ -36,7 +23,7 @@ export DIR=`pwd`
 
 # 環境変数の設定
 
-以降の手順で複数のファイルで使用する基本設定値を環境変数に設定しておきます。
+以降の手順で複数のファイルで使用する基本設定値を環境変数に設定しておきます。`REGION`、`PJ`、`ENV`、`OWNER`は好きな値に設定してください。東京リージョン（ap-northeast-1）を使用する場合は置換しないでも良いです。
 
 ``` sh
 export REGION=us-east-2
@@ -51,20 +38,20 @@ export OWNER=owner
 
 ``` sh
 cd $DIR/terraform/
-find ./ -type f -exec grep -l 'REGION' {} \; | xargs sed -i -e 's:REGION:'$REGION':g'
-find ./ -type f -exec grep -l 'PJ' {} \; | xargs sed -i -e 's:PJ:'$PJ':g'
-find ./ -type f -exec grep -l 'ENV' {} \; | xargs sed -i -e 's:ENV:'$ENV':g'
-find ./ -type f -exec grep -l 'OWNER' {} \; | xargs sed -i -e 's:OWNER:'$OWNER':g'
+find ./ -type f -exec grep -l 'ap-northeast-1' {} \; | xargs sed -i -e 's:ap-northeast-1:'$REGION':g'
+find ./ -type f -exec grep -l 'project' {} \; | xargs sed -i -e 's:project:'$PJ':g'
+find ./ -type f -exec grep -l 'environment' {} \; | xargs sed -i -e 's:environment:'$ENV':g'
+find ./ -type f -exec grep -l 'owner' {} \; | xargs sed -i -e 's:owner:'$OWNER':g'
 ```
 
 **macの場合**
 
 ``` sh
 cd $DIR/terraform/
-find ./ -type f -exec grep -l 'REGION' {} \; | xargs sed -i "" -e 's:REGION:'$REGION':g'
-find ./ -type f -exec grep -l 'PJ' {} \; | xargs sed -i "" -e 's:PJ:'$PJ':g'
-find ./ -type f -exec grep -l 'ENV' {} \; | xargs sed -i "" -e 's:ENV:'$ENV':g'
-find ./ -type f -exec grep -l 'OWNER' {} \; | xargs sed -i "" -e 's:OWNER:'$OWNER':g'
+find ./ -type f -exec grep -l 'ap-northeast-1' {} \; | xargs sed -i "" -e 's:ap-northeast-1:'$REGION':g'
+find ./ -type f -exec grep -l 'project' {} \; | xargs sed -i "" -e 's:project:'$PJ':g'
+find ./ -type f -exec grep -l 'environment' {} \; | xargs sed -i "" -e 's:environment:'$ENV':g'
+find ./ -type f -exec grep -l 'owner' {} \; | xargs sed -i "" -e 's:owner:'$OWNER':g'
 ```
 
 # tfバックエンドの作成
@@ -94,120 +81,20 @@ S3バケットはtfstateを保存する用のバケットです。DynamoDBはsta
 このtfstateファイルは削除しないように注意してください。
 
 ``` sh
-ll
+ll terraform*
 ```
 
 表示例
 
 ```
--rw-r--r--  1 moriryota62  staff  1182 11 13 22:49 tf-backend.tf
--rw-r--r--  1 moriryota62  staff  4279 11 21 11:23 terraform.tfstate
--rw-r--r--  1 moriryota62  staff  2049 11 21 11:23 terraform.tfstate.backup
+-rw-r--r--  1 moriryota62  staff   156 10  3 17:28 terraform.tfstate
+-rw-r--r--  1 moriryota62  staff  5023 10  3 17:28 terraform.tfstate.backup
+-rw-r--r--  1 moriryota62  staff    34 10  7 23:12 terraform.tfvars
 ```
-
-# パラメータ設定
-
-EKSおよび周辺リソースを構築します。まずはmainとなるディレクトリに移動します。
-
-``` sh
-cd $DIR/terraform/main
-```
-
-`local_values.tf`および`maint.tf`を修正します。
-`local_values.tf`には作成するリソースの内、値を決める必要のあるパラメータをまとめています。
-`maint.tf`はAWSリソースを作成するモジュールを読み込みます。不要なモジュールがあればブロックごとコメントアウトしてください。
-
-以下、モジュールごとに修正のポイントを解説します。
-
-## network
-
-EKSをデプロイするVPCやサブネットを作成します。
-
-既存のネットワークを使用する場合、`main.tf`の`module "network"`をブロックごとコメントアウトしてください。
-また、その場合は`maint.tf`内にある`module.network〜`でパラメータを読み込んでいる箇所を自身の環境に合わせた値へ修正してください。
-たとえば、VPC-IDが`vpc-01b9832`だった場合、`main.tf`内の`module.network.vpc_id`を`vpc-01b9832`にすべて置換します。
-
-新規にネットワークを作成する場合、`local_value.tf`内のnetwork module関連パラメータを指定してください。
-なお、EKSの仕様上ことなる2つ以上のAZが必要となります。そのため、各サブネットは必ず2つ以上指定してください。
-
-## bastion
-
-踏み台サーバを作成します。
-
-`local_value.tf`内のbastion module関連パラメータを指定してください。
-なお、sshキーを指定する場合、terraform実行前にデプロイするリージョンでkeyペアを作成しておいてください。モジュール内でkeyペアは作成しません。
-インスタンスの自動起動/停止が不要な場合は`cloudwatch_enable_schedule`をfalseにします。terraform実行後のoutputに踏み台サーバのIPアドレスが表示されます。
-
-複数の踏み台サーバを作成したい場合、`maint.tf`内の`module "bastion"`をブロックごとコピペし、モジュール名や`local.〜`のパラメータ名を変更し、`local_value.tf`で値を設定してください。
-
-## kms
-
-EFSやEKSのSecretリソースを暗号化するキーを発行します。
-
-KMSについてのパラメータはとくに指定しません。
-
-## efs
-
-複数Podでデータを共有するためのEFSを作成します。
-
-EKSでのEFSの扱いかたによって`local_value.tf`内のefs module関連パラメータの指定が変わります。
-
-### EFS provisioner を使用する場合
-
-`local_value.tf`内の`efs_access_points`を`efs_access_points = {}`と設定します。terraform実行後のoutputに`efs_id`が表示されます。これらはEKSのK8sマニフェストで使用するため値を控えておきます。
-
-### EFS CSI Driver を使用する場合
-
-`local_value.tf`内の`efs_access_points`を設定します。EFSの用途ごとにEFSアクセスポイントを作成します。用途の数だけ`efs_access_points`にmapを設定してください。terraform実行後のoutputに`efs_id`と`access_points`が表示されます。これらはEKSのK8sマニフェストで使用するため値を控えておきます。
-
-## eks
-
-EKSを作成します。
-
-`local_value.tf`内のeks module関連パラメータを指定してください。
-
-## node-group
-
-EKSのマネージドノードグループを作成します。
-
-`local_value.tf`内のnode-group module関連パラメータを指定してください。
-なお、sshキーを指定する場合、terraform実行前にデプロイするリージョンでkeyペアを作成しておいてください。モジュール内でkeyペアは作成しません。
-
-複数のノードグループを作成したい場合、`maint.tf`内の`module "worker-node"`をブロックごとコピペし、モジュール名や`local.〜`のパラメータ名を変更し、`local_value.tf`で値を設定してください。
-
-## fargate
-
-EKSのFargateプロファイルを作成します。
-
-Fargateを使用しない場合、`main.tf`の`module "fargate"`をブロックごとコメントアウトしてください。
-
-Fargateを使用する場合、`local_value.tf`内のfargate module関連パラメータを指定してください。
-
-複数のFargateプロファイルを作成したい場合、`maint.tf`内の`module "fargate"`をブロックごとコピペし、モジュール名や`local.〜`のパラメータ名を変更し、`local_value.tf`で値を設定してください。
-
-## iam-for-sa
-
-AWSのIAMロールとK8sのServiceAccountを連携する設定を行います。
-
-iam for saを設定しない場合、`main.tf`の`module "iam-for-sa"`をブロックごとコメントアウトしてください。
-
-iam for saを設定する場合、`local_value.tf`内のiam for sa module関連パラメータを指定してください。
-
-複数のIAMロールおよびServiceAccountを連携する場合、`maint.tf`内の`module "iam-for-sa"`をブロックごとコピペし、モジュール名や`local.〜`のパラメータ名を変更し、`local_value.tf`で値を設定してください。
-
-## route53
-
-Route53のホストゾーンおよびレコードを作成します。
-
-Route53を設定しない場合、`main.tf`の`module "route53"`をブロックごとコメントアウトしてください。
-
-Route53を設定する場合、`local_value.tf`内のroute53 module関連パラメータを指定してください。
-レコードはIngress ControllerのELBなど、Service Type:LoadBalancerでデプロイしたELBのアイリアス指定を想定しています。
-クラスタ構築時など設定すべきLBがまだ作成されていない場合、`recods`の中身はコメントアウトしてください。
 
 # Terraform実行
 
-`local_values.tf`および`maint.tf`を修正したらTerraformを実行します。
+[terraform](../terraform/))ディレクトリ以下に各モジュールを配置しています。デプロイしたいモジュールディレクトリに移動し、`terraform.tfvars`に値を設定してください。その後、以下コマンドterraformを実行してください。
 
 ``` sh
 terraform init
@@ -215,45 +102,3 @@ terraform plan
 terraform apply
 > yes
 ```
-
-なお、EKSの作成には10分以上かかるためapplyをyesしてからすべてのリソース作成が完了するまで20分ほどかかります。
-完了すると以下のように出力されます。
-
-```
-Apply complete! Resources: 61 added, 0 changed, 0 destroyed.
-Releasing state lock. This may take a few moments...
-
-Outputs:
-
-access_points = []
-bastion_eip = 18.195.116.73
-efs_id = fs-9fc0aft7
-```
-
-# KUBECONFIGの設定
-
-EKSに接続するためkubeconfigを設定します。
-
-以下のコマンドを実行します。
-
-``` sh
-aws eks --region $REGION update-kubeconfig --name $PJ-$ENV --kubeconfig ~/.kube/config_$PJ-$ENV
-aws eks --region us-east-2 update-kubeconfig --name pj-env --kubeconfig ~/.kube/config_pj-env
-```
-
-その後、使用するkubeconfigを以下の環境変数で設定します。
-
-``` sh
-export KUBECONFIG=~/.kube/config_$PJ-$ENV
-```
-
-以下コマンドでEKSへの接続を確認します。
-
-``` sh
-kubectl get node
-```
-
-ノードが表示されれば接続できています。
-
-以降はEKS(K8s)の設定をします。
-基本的な機能の[実装方法](./manifests.md)を用意していますのでそちらもご活用ください。
