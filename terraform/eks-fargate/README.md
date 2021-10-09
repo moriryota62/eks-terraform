@@ -14,7 +14,7 @@
 
 ### フルFargate構成の場合
 
-EC2タイプのワーカーを構成せず、Fargateだけで構成するには以下のように`terraform.tfvars`に設定してください。
+EC2タイプのワーカーを構成せず、Fargateだけで構成するには以下のように`terraform.tfvars`を設定してください。
 
 ```
 eks-fargate_profiles = {
