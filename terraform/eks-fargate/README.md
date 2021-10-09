@@ -12,6 +12,19 @@
 
 あるNamespaceのすべてのPodをFargateで動かしたい場合`namespace`のみ設定し、`labels`は空（{}）を指定してください。ちなみに、`namespace`の設定は必須です。
 
+### フルFargate構成の場合
+
+EC2タイプのワーカーを構成せず、Fargateだけで構成するには以下のように`terraform.tfvars`に設定してください。
+
+```
+eks-fargate_profiles = {
+  "kube-system" = { namespace = "kube-system", labels = {} },
+  "default"     = { namespace = "default", labels = {} }
+}
+```
+
+また、Fargateプロファイルを作成した後、ns:kube-systemのPod状態を確認してください。おそらくCoreDNSがPendingになっているはずです。これはCoreDNSがEC2タイプのワーカーにデプロイされるように設定されているためです。CoreDNSのDeploymentを`kubectl edit deployment`で修正します。annotaionsに`eks.amazonaws.com/compute-type : ec2`があるはずなので削除してください。マニフェスト更新後、しばらくするとCoreDNSがFargateで起動します。
+
 ## Requirements
 
 | Name | Version |
