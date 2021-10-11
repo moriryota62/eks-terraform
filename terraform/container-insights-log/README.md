@@ -26,6 +26,10 @@ CloudWatchに格納したログは自動的にKinesis Firehoseを経由してS3�
 - /aws/kinesisfirehose/<EKSクラスタ名>/logarchive/dataplane
 - /aws/kinesisfirehose/<EKSクラスタ名>/logarchive/host
 
+### ログの通知
+
+ロググループごとにサブスクリプションフィルタを設定して任意の文字列が出力された時にSNSで通知できます。サブスクリプションフィルタ、Lambda、SNSも本モジュールで作成します。通知の必要がないロググループは`variables.tf`の`filter_pattern`に`null`を設定してください。
+
 ## Container Insightsのデプロイ
 
 本モジュールを実行した後、以下手順でContainer Insights（Fluent Bit）をデプロイします。
@@ -76,3 +80,28 @@ kubectl delete pod -n amazon-cloudwatch <Pod名>
 ```
 
 PodがRunnnigし、CloudWatchの各ロググループにログが出力されているはずです。また、S3へのアーカイブも問題なくできていることを確認してください。
+
+## Requirements
+
+| Name | Version |
+|------|---------|
+| terraform | >= 0.13.5 |
+
+## Providers
+
+| Name | Version |
+|------|---------|
+| aws | n/a |
+| terraform | n/a |
+
+## Inputs
+
+| Name | Description | Type | Default | Required |
+|------|-------------|------|---------|:--------:|
+| base\_name | リソース群に付与する接頭語 | `string` | n/a | yes |
+| endpoint | 通知する先のメールアドレス | `list(string)` | n/a | yes |
+| log\_groups | ロググループの一覧。retention\_in\_daysはCloudWatchの保持日数。transition\_glacier\_daysはGlacierへ移行する日数。filter\_patternはログ通知のトリガにする文字列。通知が不要な場合filter\_patternにnullを設定する。 | <pre>map(object({<br>    retention_in_days = number<br>    transition_glacier_days = number<br>    filter_pattern = string<br>  }))</pre> | n/a | yes |
+
+## Outputs
+
+No output.

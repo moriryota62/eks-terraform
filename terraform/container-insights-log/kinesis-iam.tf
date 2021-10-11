@@ -17,40 +17,6 @@ resource "aws_iam_role" "kinesis" {
   }
 }
 
-# locals {
-#   arn = [for d in aws_s3_bucket.container_insights : "${d.arn}/*"]
-# }
-
-# resource "aws_iam_policy" "kinesis" {
-#   name  = "${var.base_name}-kinesis-container-insights"
-
-#   policy = <<EOF
-# {
-#     "Version": "2012-10-17",
-#     "Statement": [
-#         {
-#             "Action": [
-#                 "logs:PutLogEvents"
-#             ],
-#             "Resource": ${jsonencode(values(aws_cloudwatch_log_group.container_insights)[*].arn)} ,
-#             "Effect": "Allow"
-#         },
-#         {
-#             "Action": [
-#                 "s3:AbortMultipartUpload",
-#                 "s3:GetBucketLocation",
-#                 "s3:GetObject",
-#                 "s3:ListBucket",
-#                 "s3:ListBucketMultipartUploads",
-#                 "s3:PutObject"
-#             ],
-#             "Resource": ${jsonencode("${local.arn}")} ,
-#             "Effect": "Allow"
-#         }
-#     ]
-# }
-# EOF
-
 resource "aws_iam_policy" "kinesis" {
   name  = "${var.base_name}-kinesis-container-insights"
 
