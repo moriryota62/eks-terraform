@@ -4,7 +4,7 @@ data "terraform_remote_state" "network" {
   config = {
     bucket = "project-environment-tfstate"
     key    = "network/terraform.tfstate"
-    region = "us-east-2"
+    region = "ap-northeast-1"
   }
 }
 
@@ -14,6 +14,6 @@ data "terraform_remote_state" "eks" {
   config = {
     bucket = "project-environment-tfstate"
     key    = "eks/terraform.tfstate"
-    region = "us-east-2"
+    region = "ap-northeast-1"
   }
 }

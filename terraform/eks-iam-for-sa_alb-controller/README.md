@@ -3,7 +3,6 @@
 ## 依存モジュール
 
 - tf-backend
-- network
 - eks
 
 ## 説明

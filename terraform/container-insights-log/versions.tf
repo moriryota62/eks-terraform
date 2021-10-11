@@ -12,12 +12,12 @@ terraform {
     key            = "container-insights-log/terraform.tfstate"
     encrypt        = true
     dynamodb_table = "project-environment-tfstate-lock"
-    region         = "us-east-2"
+    region         = "ap-northeast-1"
   }
 }
 
 provider "aws" {
-  region = "us-east-2"
+  region = "ap-northeast-1"
   default_tags {
     tags = {
       pj    = "project"
