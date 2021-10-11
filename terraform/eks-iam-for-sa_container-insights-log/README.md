@@ -1,4 +1,4 @@
-# eks-iam-for-sa_alb-controller
+# eks-iam-for-sa_container-insights-log
 
 ## 依存モジュール
 
@@ -7,9 +7,9 @@
 
 ## 説明
 
-`eks-iam-for-sa_alb-controller`は[AWS Load Balancer Controller](https://docs.aws.amazon.com/ja_jp/eks/latest/userguide/aws-load-balancer-controller.html)を使用するためのIAMロールを作成します。
+`eks-iam-for-sa_container-insights-log`は[Container Insights](https://docs.aws.amazon.com/ja_jp/AmazonCloudWatch/latest/monitoring/ContainerInsights.html)でログ収集を行うためのIAMロールを作成します。
 
-[terraform.tfvars](./terraform.tfvars)に設定してある`k8s_namespace`および`k8s_sa`はそのまま`kube-system`および`aws-load-balancer-controller`を指定ください。
+[terraform.tfvars](./terraform.tfvars)に設定してある`k8s_namespace`および`k8s_sa`はそのまま`amazon-cloudwatch`および`fluent-bit`を指定ください。
 
 本モジュールのディレクトリをコピーして別用途のIAM for SAを設定できます。その場合、[iam_policy.json](./iam_policy.json)や[iam_policy.tf](./iam_policy.tf)も修正してください。
 
