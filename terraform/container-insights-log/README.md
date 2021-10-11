@@ -101,7 +101,7 @@ PodがRunnnigし、CloudWatchの各ロググループにログが出力されて
 |------|-------------|------|---------|:--------:|
 | base\_name | リソース群に付与する接頭語 | `string` | n/a | yes |
 | endpoint | 通知する先のメールアドレス | `list(string)` | n/a | yes |
-| log\_groups | ロググループの一覧。retention\_in\_daysはCloudWatchの保持日数。transition\_glacier\_daysはGlacierへ移行する日数。filter\_patternはログ通知のトリガにする文字列。通知が不要な場合filter\_patternにnullを設定する。 | <pre>map(object({<br>    retention_in_days = number<br>    transition_glacier_days = number<br>    filter_pattern = string<br>  }))</pre> | n/a | yes |
+| log\_groups | ロググループの一覧。<br>retention\_in\_daysはCloudWatchの保持日数。<br>transition\_glacier\_daysはGlacierへ移行する日数。<br>filter\_patternはログ通知のトリガにする文字列。<br>通知が不要な場合filter\_patternにnullを設定する。 | <pre>map(object({<br>    retention_in_days = number<br>    transition_glacier_days = number<br>    filter_pattern = string<br>  }))</pre> | n/a | yes |
 
 ## Outputs
 
