@@ -44,8 +44,8 @@ kubectl apply -f https://raw.githubusercontent.com/aws-samples/amazon-cloudwatch
 Fluent BitのConfigmapを作成します。`ClusterName`や`RegionName`は自身の環境にあわせて修正してください。
 
 ``` sh
-ClusterName=$PJ-$ENV
-RegionName=$REGION
+ClusterName=project-environment
+RegionName=ap-northeast-1
 FluentBitHttpPort='2020'
 FluentBitReadFromHead='Off'
 [[ ${FluentBitReadFromHead} = 'On' ]] && FluentBitReadFromTail='Off'|| FluentBitReadFromTail='On'
