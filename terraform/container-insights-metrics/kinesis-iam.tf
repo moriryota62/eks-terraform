@@ -1,5 +1,5 @@
 resource "aws_iam_role" "kinesis" {
-  name = "${var.base_name}-kinesis-container-insights-log"
+  name = "${var.base_name}-kinesis-container-insights-metris"
 
   assume_role_policy = jsonencode({
     Statement = [{
@@ -13,12 +13,12 @@ resource "aws_iam_role" "kinesis" {
   })
 
   tags = {
-    "Name" = "${var.base_name}-kinesis-container-insights-log"
+    "Name" = "${var.base_name}-kinesis-container-insights-metris"
   }
 }
 
 resource "aws_iam_policy" "kinesis" {
-  name  = "${var.base_name}-kinesis-container-insights-log"
+  name  = "${var.base_name}-kinesis-container-insights-metris"
 
   policy = <<EOF
 {
@@ -48,7 +48,7 @@ resource "aws_iam_policy" "kinesis" {
 EOF
 
   tags = {
-    "Name" = "${var.base_name}-kinesis-container-insights-log"
+    "Name" = "${var.base_name}-kinesis-container-insights-metris"
   }
 }
 
