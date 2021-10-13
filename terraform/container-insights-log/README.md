@@ -31,11 +31,11 @@ CloudWatchに格納したログは自動的にKinesis Firehoseを経由してS3�
 
 ロググループごとにサブスクリプションフィルタを設定して任意の文字列が出力された時にSNSで通知できます。サブスクリプションフィルタ、Lambda、SNSも本モジュールで作成します。通知の必要がないロググループは`variables.tf`の`filter_pattern`に`null`を設定してください。
 
-## Container Insightsのデプロイ
+## Container Insights（Fluent Bit）のデプロイ
 
 本モジュールを実行した後、以下手順でContainer Insights（Fluent Bit）をデプロイします。
 
-まず、ns:amazon-cloudwatchを作成します。
+まず、ns:amazon-cloudwatchを作成します。（[container-insights-metrics](../container-insights-metrics/)で作成済の場合は飛ばして構いません。）
 
 ``` sh
 kubectl apply -f https://raw.githubusercontent.com/aws-samples/amazon-cloudwatch-container-insights/latest/k8s-deployment-manifest-templates/deployment-mode/daemonset/container-insights-monitoring/cloudwatch-namespace.yaml
