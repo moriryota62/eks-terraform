@@ -23,6 +23,14 @@ CloudWatchに格納したログは自動的にKinesis Firehoseを経由してS3�
 
 - /aws/kinesisfirehose/<EKSクラスタ名>/logarchive/performance
 
+### メトリクスの通知
+
+Container InsightsでCloudWatchに集めたメトリクスに対し、しきい値を監視しSNSで自動発報できます。CloudWatchアラーム、SNSも本モジュールで作成します。
+
+Container Insightsで集めるログはいくつかのディメンションに分かれます。ディメンションはクラスタレベルやPodレベルなどの範囲でメトリクスを集計します。本モジュールではディメンションごとに通知設定ができるようにしています。たとえばPodのメモリ使用率を表す`pod_memory_utilization_over_pod_limit`はPodレベル、Serviceレベル、Namespaceレベル、Clusterレベルそれぞれでメトリクスを表示でき、本モジュールは各レベルごとに通知設定が可能です。
+
+通知対象のメトリクスを指定する`metric_name`の値は[こちら](https://docs.aws.amazon.com/ja_jp/AmazonCloudWatch/latest/monitoring/Container-Insights-metrics-EKS.html)のAWSドキュメントを参照ください。
+
 ## Container Insights（CloudWatch Agent）のデプロイ
 
 本モジュールを実行した後、以下手順でContainer Insights（CloudWatch Agent）をデプロイします。
@@ -66,3 +74,32 @@ CloudWatch AgentのDaemonSetをデプロイします。
 ``` sh
 kubectl apply -f https://raw.githubusercontent.com/aws-samples/amazon-cloudwatch-container-insights/latest/k8s-deployment-manifest-templates/deployment-mode/daemonset/container-insights-monitoring/cwagent/cwagent-daemonset.yaml
 ```
+
+## Requirements
+
+| Name | Version |
+|------|---------|
+| terraform | >= 0.13.5 |
+
+## Providers
+
+| Name | Version |
+|------|---------|
+| aws | n/a |
+| terraform | n/a |
+
+## Inputs
+
+| Name | Description | Type | Default | Required |
+|------|-------------|------|---------|:--------:|
+| base\_name | リソース群に付与する接頭語 | `string` | n/a | yes |
+| cluster\_dimensions | 通知するメトリクスの一覧。<br>metric\_nameは通知対象のメトリクス名。<br>comparison\_operatorは比較演算の種類。<br>periodは集計期間(秒)。<br>statisticは統計の種類。<br>thresholdはしきい値。<br>Clusterレベルのアラート通知を行わない場合、空マップを指定する。 | <pre>map(object({<br>    metric_name         = string<br>    comparison_operator = string<br>    period              = string<br>    statistic           = string<br>    threshold           = string<br>  }))</pre> | n/a | yes |
+| endpoint | 通知する先のメールアドレス | `list(string)` | n/a | yes |
+| log\_groups | ロググループの一覧。<br>retention\_in\_daysはCloudWatchの保持日数。<br>transition\_glacier\_daysはGlacierへ移行する日数。 | <pre>map(object({<br>    retention_in_days       = number<br>    transition_glacier_days = number<br>  }))</pre> | n/a | yes |
+| namespace\_dimensions | 通知するメトリクスの一覧。<br>metric\_nameは通知対象のメトリクス名。<br>periodは集計期間(秒)。<br>statisticは統計の種類。<br>thresholdはしきい値。<br>namespaceは通知対象のNamespace名。<br>Namespaceレベルのアラート通知を行わない場合、空マップを指定する。 | <pre>map(object({<br>    metric_name         = string<br>    comparison_operator = string<br>    period              = string<br>    statistic           = string<br>    threshold           = string<br>    namespace           = string<br>  }))</pre> | n/a | yes |
+| pod\_dimensions | 通知するメトリクスの一覧。<br>metric\_nameは通知対象のメトリクス名。<br>periodは集計期間(秒)。<br>statisticは統計の種類。<br>thresholdはしきい値。<br>namespaceは通知対象のPodが動くNamespace名。<br>Podは通知対象のPod名。<br>Podレベルのアラート通知を行わない場合、空マップを指定する。 | <pre>map(object({<br>    metric_name         = string<br>    comparison_operator = string<br>    period              = string<br>    statistic           = string<br>    threshold           = string<br>    namespace           = string<br>    pod                 = string<br>  }))</pre> | n/a | yes |
+| service\_dimensions | 通知するメトリクスの一覧。<br>metric\_nameは通知対象のメトリクス名。<br>periodは集計期間(秒)。<br>statisticは統計の種類。<br>thresholdはしきい値。<br>namespaceは通知対象のServiceが動くNamespace名。<br>Serviceは通知対象のPod名。<br>Serviceレベルのアラート通知を行わない場合、空マップを指定する。 | <pre>map(object({<br>    metric_name         = string<br>    comparison_operator = string<br>    period              = string<br>    statistic           = string<br>    threshold           = string<br>    namespace           = string<br>    service             = string<br>  }))</pre> | n/a | yes |
+
+## Outputs
+
+No output.
