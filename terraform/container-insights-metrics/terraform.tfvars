@@ -25,14 +25,14 @@ cluster_dimensions = {
 
 # Namespace dimensions
 namespace_dimensions = {
-  "ns-default-number-of-pods" = {
-    metric_name         = "namespace_number_of_running_pods",
-    comparison_operator = "LessThanOrEqualToThreshold",
-    period              = "60",
-    statistic           = "Average"
-    threshold           = "0",
-    namespace           = "default",
-  },
+  # "ns-default-number-of-pods" = {
+  #   metric_name         = "namespace_number_of_running_pods",
+  #   comparison_operator = "LessThanOrEqualToThreshold",
+  #   period              = "60",
+  #   statistic           = "Average"
+  #   threshold           = "0",
+  #   namespace           = "default",
+  # },
 }
 
 # Service dimensions
