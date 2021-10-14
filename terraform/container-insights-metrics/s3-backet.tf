@@ -14,6 +14,6 @@ resource "aws_s3_bucket" "container_insights" {
   }
 
   tags = {
-      "Name" = "${var.base_name}-logarchive-${each.key}"
+    "Name" = "${var.base_name}-logarchive-${each.key}"
   }
 }

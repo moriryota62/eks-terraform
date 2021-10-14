@@ -18,9 +18,9 @@ resource "aws_iam_role" "container_insights" {
 }
 
 resource "aws_iam_policy" "container_insights" {
-  name  = "${var.base_name}-container-insights-metrics"
+  name = "${var.base_name}-container-insights-metrics"
 
-  
+
 
   policy = <<EOF
 {
