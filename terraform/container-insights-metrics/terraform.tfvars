@@ -69,4 +69,4 @@ pod_dimensions = {
     pod                 = "test",
   },
 }
-endpoint = ["moriryota62@gmail.com"]
+endpoint = ["youraddress@email.com"]
