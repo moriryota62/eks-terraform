@@ -5,6 +5,9 @@
   - [Network](#network)
   - [EFS](#efs)
   - [KMS](#kms)
+  - [Container Insights](#container-insights)
+    - [ログ](#ログ)
+    - [メトリクス](#メトリクス)
 
 # EKS構成
 
@@ -55,3 +58,31 @@ EFSは任意のアクセスポイントを作成することもできます。
 ## KMS
 
 K8sのSecretおよびEFSを暗号化するための鍵を作成します。
+
+## Container Insights
+
+EKSの監視ソリューションであるContainer Insightsを利用するためのリソース群も作成します。ログおよびメトリクスのアーキテクチャは以下の通りです。
+
+### ログ
+
+![ログ](./containerinsights-Log.svg)
+
+- Container Insightsがログを送るロググループをログの保管期限付きで作成する
+- 格納されたログはさらにサブスクリプションフィルタでそれぞれ以下2通りのアクションが行われる
+  - すべてのログ
+    - Kinesis Data Firehoseを経由してS3（標準）へ格納される
+    - S3（標準）に格納したログは指定期間をすぎるとS3 Glacierへ移行される
+  - 指定文字列を含むログ
+    - Lambdaを経由してSNSから指定したEメールアドレスにEメールを送信する
+
+### メトリクス
+
+![メトリクス](./containerinsights-Metrics.svg)
+
+- Container Insightsがログを送るロググループをログの保管期限付きで作成する
+- 格納されたログはさらにサブスクリプションフィルタで以下のアクションが行われる
+  - すべてのログ
+    - Kinesis Data Firehoseを経由してS3（標準）へ格納される
+    - S3（標準）に格納したログは指定期間をすぎるとS3 Glacierへ移行される
+- メトリクスはアラームでしきい値監視を行う。条件が満たされるとSNSから指定したEメールアドレスにEメールを送信する
+
