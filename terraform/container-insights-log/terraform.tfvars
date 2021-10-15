@@ -16,4 +16,4 @@ log_groups = {
     filter_pattern          = null,
   },
 }
-endpoint = ["moriryota62@gmail.com"]
+endpoint = ["youraddress@email.com"]
