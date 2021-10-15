@@ -31,6 +31,8 @@ Container Insightsで集めるログはいくつかのディメンションに�
 
 通知対象のメトリクスを指定する`metric_name`の値は[こちら](https://docs.aws.amazon.com/ja_jp/AmazonCloudWatch/latest/monitoring/Container-Insights-metrics-EKS.html)のAWSドキュメントを参照ください。
 
+比較演算の`comparison_operator`は`GreaterThanOrEqualToThreshold`（以上）、`GreaterThanThreshold`（より大きい）、`LessThanThreshold`（より小さい）、`LessThanOrEqualToThreshold`（以下）から設定してください。
+
 ## Container Insights（CloudWatch Agent）のデプロイ
 
 本モジュールを実行した後、以下手順でContainer Insights（CloudWatch Agent）をデプロイします。
