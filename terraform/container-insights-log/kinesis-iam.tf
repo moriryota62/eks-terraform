@@ -18,7 +18,7 @@ resource "aws_iam_role" "kinesis" {
 }
 
 resource "aws_iam_policy" "kinesis" {
-  name  = "${var.base_name}-kinesis-container-insights-log"
+  name = "${var.base_name}-kinesis-container-insights-log"
 
   policy = <<EOF
 {

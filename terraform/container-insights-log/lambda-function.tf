@@ -13,8 +13,8 @@ resource "aws_lambda_function" "log" {
 
   environment {
     variables = {
-      SNS_TOPIC_ARN=aws_sns_topic.log.arn,
-      ALARM_SUBJECT="[${var.base_name}] Container Insights detected log message!"
+      SNS_TOPIC_ARN = aws_sns_topic.log.arn,
+      ALARM_SUBJECT = "[${var.base_name}] Container Insights detected log message!"
     }
   }
 
