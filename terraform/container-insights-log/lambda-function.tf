@@ -5,7 +5,7 @@ data "archive_file" "function_source" {
 }
 
 resource "aws_lambda_function" "log" {
-  filename      = "./lambda-code/subscription.zip"
+  filename      = "./subscription.zip"
   function_name = "${var.base_name}-container-insights-log-alert"
   role          = aws_iam_role.log-lambda.arn
   handler       = "subscription.lambda_handler"
