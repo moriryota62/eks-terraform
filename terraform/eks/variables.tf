@@ -29,3 +29,8 @@ variable "enabled_cluster_log_types" {
   description = "ログ収集を有効にするマスターコンポーネント"
   type        = list(string)
 }
+
+variable "retention_in_days" {
+  description = "CloudWatch Logsのロググループの保持期間"
+  type        = number
+}
