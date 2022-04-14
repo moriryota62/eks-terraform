@@ -1,4 +1,4 @@
-base_name                 = "eks-test-shimadzu"
+base_name                 = "project-environment"
 eks_version               = "1.21"
 endpoint_private_access   = true
 endpoint_public_access    = true
