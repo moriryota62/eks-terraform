@@ -1,5 +1,5 @@
 # common
-base_name = "eks-test-shimadzu"
+base_name = "project-environment"
 
 # cloudwatch
 log_groups = {
@@ -24,4 +24,4 @@ log_groups = {
 endpoint = ["youraddress@email.com"]
 
 # Lambda
-log_group_lambda_retention_in_days = 1
+log_group_lambda_retention_in_days = 3
