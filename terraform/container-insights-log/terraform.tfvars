@@ -1,4 +1,7 @@
+# common
 base_name = "project-environment"
+
+# cloudwatch
 log_groups = {
   "application" = {
     retention_in_days       = 1,
@@ -16,4 +19,9 @@ log_groups = {
     filter_pattern          = null,
   },
 }
+
+# SNS
 endpoint = ["youraddress@email.com"]
+
+# Lambda
+log_group_lambda_retention_in_days = 3

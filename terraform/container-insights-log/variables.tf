@@ -18,3 +18,8 @@ variable "endpoint" {
   description = "通知する先のメールアドレス"
   type        = list(string)
 }
+
+variable "log_group_lambda_retention_in_days" {
+  description = "lamdaから出力されるログの保持期間"
+  type        = number
+}
